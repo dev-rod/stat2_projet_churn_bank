@@ -33,7 +33,7 @@ if("leaps" %in% rownames(installed.packages()) == FALSE) {install.packages("leap
 ##################################################################################
 # 2 - Import des données 
 ##################################################################################
-#setwd(".")
+
 # (10127 matchs)
 data <- read.csv("data/BankChurners.csv", sep = ",")
 
