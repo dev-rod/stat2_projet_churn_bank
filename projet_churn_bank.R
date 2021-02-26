@@ -59,6 +59,7 @@ data_quit %>% select(where(is.numeric)) %>% as.matrix() %>%
 hist(data_clean$Total_Trans_Amt)
 
 
+
 # mutates
 data_corr <- data_clean %>% mutate_if(is.factor,as.numeric)
 data_colnames <- colnames(data_clean)
