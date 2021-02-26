@@ -27,8 +27,13 @@ if("pastecs" %in% rownames(installed.packages()) == FALSE) {install.packages("pa
 if("WRS2" %in% rownames(installed.packages()) == FALSE) {install.packages("WRS2")};library(WRS2)
 # set of packages that work in harmony because they share common data representations and 'API' design.
 if("tidyverse" %in% rownames(installed.packages()) == FALSE) {install.packages("tidyverse")};library(tidyverse)
+#if("dplyr" %in% rownames(installed.packages()) == FALSE) {install.packages("dplyr")};library(dplyr)
 # Regression subset selection, including exhaustive search.
 if("leaps" %in% rownames(installed.packages()) == FALSE) {install.packages("leaps")};library(leaps)
+# Graphes de corrélation
+if("corrplot" %in% rownames(installed.packages()) == FALSE) {install.packages("corrplot")};library(corrplot)
+# lib de graphes avancés
+if("highcharter" %in% rownames(installed.packages()) == FALSE) {install.packages("highcharter")};library(highcharter)
 
 ##################################################################################
 # 2 - Import des données 
@@ -39,13 +44,14 @@ data <- read.csv("data/BankChurners.csv", sep = ",")
 
 # Vérification des types de champs et des valeurs nulles
 summary(data)
-str(data)
+str(data$CLIENTNUM)
 
 # Retrait des colonnes 
 # - CLIENTNUM
 # - Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_1
 # - Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_2
 data <- data[,-c(1,22,23)]
+
 
 # Séparation des clients qui ont quitté la banque de ceux qui sont resté
 data$Attrition_Flag<-as.character(data$Attrition_Flag)
@@ -55,11 +61,11 @@ data_quit <- data[(data$Attrition_Flag)=="Quit",]
 
 # Analyse de chaque variable de manière séparée
 categ <- data_quit %>%
-    select(Attrition_Flag,Gender, Marital_Status, Card_Category, Income_Category, Education_Level)
+    select(Attrition_Flag, Gender, Marital_Status, Card_Category, Income_Category, Education_Level)
 
-#Plot par genre
+# Plot par genre
 categ %>%
-    select(Attrition_Flag,Gender) %>%
+    select(Attrition_Flag, Gender) %>%
     mutate(Gender = ifelse(Gender == "F","Female","Male")) %>%
     ggplot(aes(x=Attrition_Flag,fill=Gender)) +
     geom_bar(position="dodge2") +
@@ -70,11 +76,11 @@ categ %>%
               vjust=-4,
               position = position_dodge(.9))+
     labs(title="Distribution par genre",
-         
          x="Attrition_Flag",y="NB")
-#Plot par Statut marital
+
+# Plot par Statut marital
 categ %>%
-    select(Attrition_Flag,Marital_Status) %>%
+    select(Attrition_Flag, Marital_Status) %>%
     ggplot(aes(x=Attrition_Flag,fill=Marital_Status)) +
     geom_bar(position="dodge2") +
     geom_text(aes(y = (..count..)/sum(..count..), 
@@ -84,12 +90,11 @@ categ %>%
               vjust=-4,
               position = position_dodge(.9))+
     labs(title="Distribution par statut marital",
-         
          x="Attrition_Flag",y="NB")
 
-#Plot par carte bancaire
+# Plot par carte bancaire
 categ %>%
-    select(Attrition_Flag,Card_Category) %>%
+    select(Attrition_Flag, Card_Category) %>%
     ggplot(aes(x=Attrition_Flag,fill=Card_Category))+
     geom_bar(position="dodge2") +
     geom_text(aes(y = (..count..)/sum(..count..), 
@@ -99,11 +104,11 @@ categ %>%
               vjust=-4,
               position = position_dodge(.9))+
     labs(title="Distribution par type de CB",
-         
-         x="Attrition_Flag",y="NB")
-#Plot par rentr?e financiere
+         x="Attrition_Flag", y="NB")
+
+# Plot par rentrée financiere
 categ %>%
-    select(Attrition_Flag,Income_Category) %>%
+    select(Attrition_Flag, Income_Category) %>%
     ggplot(aes(x=Attrition_Flag,fill=Income_Category)) +
     geom_bar(position="dodge2") +
     geom_text(aes(y = (..count..)/sum(..count..), 
@@ -112,13 +117,12 @@ categ %>%
               size = 3,
               vjust=-4,
               position = position_dodge(.9))+
-    labs(title="Distribution par rentr?e financi?re",
-         
+    labs(title="Distribution par rentrée financière",
          x="Attrition_Flag",y="NB")
 
-#Plot par niveau d'?tude
+# Plot par niveau d'étude
 categ %>%
-    select(Attrition_Flag,Education_Level) %>%
+    select(Attrition_Flag, Education_Level) %>%
     ggplot(aes(x=Attrition_Flag,fill=Education_Level)) +
     geom_bar(position="dodge2") +
     geom_text(aes(y = (..count..)/sum(..count..), 
@@ -127,21 +131,17 @@ categ %>%
               size = 3,
               vjust=-4,
               position = position_dodge(.9))+
-    labs(title="Distribution par niveau d'?tude",
-         
+    labs(title="Distribution par niveau d'étude",
          x="Attrition_Flag",y="NB")
 
+# Graphique I des corrélations entre chacune des variables
+# data %>% select(where(is.numeric)) %>%
+#     as.matrix() %>%
+#     cor() %>%
+#     corrplot(method = "number", type="lower")
 
-
-# Graphique des corrélations entre chacune des variables
-data_quit %>%
-    select(where(is.numeric)) %>%
-    as.matrix() %>%
-    cor() %>%
-    corrplot(method = "number", type="lower")
-
-# Obtaining the correlation matrix with the Spearman method
-cor_spearman <- cor(dados_cor[, sapply(dados_cor, is.numeric)], method = 'spearman')
+# Graphique II des corrélations entre chacune des variables avec la méthode de spearman
+cor_spearman <- cor(data[, sapply(data, is.numeric)], method = 'spearman')
 # Visualizing with a heatmap the correlation matrix with the pearson method
 as.matrix(data.frame(cor_spearman)) %>% 
     round(3) %>% #round
@@ -157,13 +157,13 @@ as.matrix(data.frame(cor_spearman)) %>%
 
 
 # Transaction Count
-p2 <- data_clean %>% ggplot(aes(x=Total_Trans_Ct, fill=Attrition_Flag)) + 
+p2 <- data %>% ggplot(aes(x=Total_Trans_Ct, fill=Attrition_Flag)) + 
     geom_density(alpha=0.7) +
     scale_fill_manual(values= c('#3C3838','#338076'),name='') +
     theme_classic() +
     labs(title='Total Transaction Count (Last 12 months) by flag') +
     theme(legend.position='bottom')
-
+p2
 
 # variable dependante Y = départ ou non : attrition_flag
 # variable qualitative donc on fera une régression logistique
