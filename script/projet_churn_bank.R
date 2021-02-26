@@ -139,6 +139,7 @@ categ %>%
 
 #CLASSE
 data_select<-data
+
 #classe_marital_class
 data_select[which(data_select$Marital_Status %in% c("Divorced","Single")),"Marital_Status"]<-"Single"
 #Card_category_class
