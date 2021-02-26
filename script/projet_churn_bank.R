@@ -54,7 +54,7 @@ data$Attrition_Flag[data$Attrition_Flag=="Attrited Customer"]<-"Quit"
 data_quit <- data[(data$Attrition_Flag)=="Quit",]
 
 # Analyse de chaque variable de manière séparée
-categ <- data_quit %>%
+categ <- data%>%
     select(Attrition_Flag,Gender, Marital_Status, Card_Category, Income_Category, Education_Level)
 
 #Plot par genre
@@ -72,6 +72,9 @@ categ %>%
     labs(title="Distribution par genre",
          
          x="Attrition_Flag",y="NB")
+
+
+
 #Plot par Statut marital
 categ %>%
     select(Attrition_Flag,Marital_Status) %>%
@@ -87,6 +90,8 @@ categ %>%
          
          x="Attrition_Flag",y="NB")
 
+
+
 #Plot par carte bancaire
 categ %>%
     select(Attrition_Flag,Card_Category) %>%
@@ -101,6 +106,7 @@ categ %>%
     labs(title="Distribution par type de CB",
          
          x="Attrition_Flag",y="NB")
+
 #Plot par rentr?e financiere
 categ %>%
     select(Attrition_Flag,Income_Category) %>%
@@ -116,7 +122,7 @@ categ %>%
          
          x="Attrition_Flag",y="NB")
 
-#Plot par niveau d'?tude
+#Plot par niveau d'étude
 categ %>%
     select(Attrition_Flag,Education_Level) %>%
     ggplot(aes(x=Attrition_Flag,fill=Education_Level)) +
@@ -131,10 +137,18 @@ categ %>%
          
          x="Attrition_Flag",y="NB")
 
-
+#CLASSE
+data_select<-data
+#classe_marital_class
+data_select[which(data_select$Marital_Status %in% c("Divorced","Single")),"Marital_Status"]<-"Single"
+#Card_category_class
+data_select[which(data_select$Card_Category %in% c("Gold","platinum","Silver")),"Card_Category"]<-"Others"
+#Income_category_class
+data_select[which(data_select$Income_Category %in% c("Less than $40K","$40K - $60K")),"Income_Category"]<-"Less than $60K"
+data_select[which(data_select$Income_Category %in% c("$60K - $80K","$80K - $120K","$120K +")),"Income_Category"]<-"More than $60K"
 
 # Graphique des corrélations entre chacune des variables
-data_quit %>%
+data_quit%>%
     select(where(is.numeric)) %>%
     as.matrix() %>%
     cor() %>%
