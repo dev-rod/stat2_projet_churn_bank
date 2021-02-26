@@ -112,12 +112,6 @@ p2 <- data_clean %>% ggplot(aes(x=Total_Trans_Ct, fill=Attrition_Flag)) +
 # stat descriptive
 
 
-
-
-
-
-
-
 # variable explicatives
 # age, genre, niveau education, statut marital, personnes à charge, revenu, type de carte, période de relation avec la banque...
 
