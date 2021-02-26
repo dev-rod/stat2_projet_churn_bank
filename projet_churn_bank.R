@@ -30,10 +30,12 @@ if("tidyverse" %in% rownames(installed.packages()) == FALSE) {install.packages("
 # Regression subset selection, including exhaustive search.
 if("leaps" %in% rownames(installed.packages()) == FALSE) {install.packages("leaps")};library(leaps)
 
+
+#christine
 ##################################################################################
 # 2 - Import des données 
 ##################################################################################
-#setwd(".")
+# setwd(".")
 # (10127 matchs)
 data <- read.csv("data/BankChurners.csv", sep = ",")
 
