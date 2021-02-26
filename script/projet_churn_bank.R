@@ -142,10 +142,32 @@ data_select<-data
 #classe_marital_class
 data_select[which(data_select$Marital_Status %in% c("Divorced","Single")),"Marital_Status"]<-"Single"
 #Card_category_class
-data_select[which(data_select$Card_Category %in% c("Gold","platinum","Silver")),"Card_Category"]<-"Others"
+data_select[which(data_select$Card_Category %in% c("Gold","Platinum","Silver")),"Card_Category"]<-"Others"
 #Income_category_class
 data_select[which(data_select$Income_Category %in% c("Less than $40K","$40K - $60K")),"Income_Category"]<-"Less than $60K"
 data_select[which(data_select$Income_Category %in% c("$60K - $80K","$80K - $120K","$120K +")),"Income_Category"]<-"More than $60K"
+
+
+
+#Model complet test
+data_select<-data
+data_select$Attrition_Flag <- as.factor(data_select$Attrition_Flag)
+data_select<-c("Attrition_Flag","Customer_Age","Dependent_count","Months_on_book","Total_Relationship_Count","Months_Inactive_12_mon","Contacts_Count_12_mon","Credit_Limit","Total_Revolving_Bal","Avg_Open_To_Buy","Total_Amt_Chng_Q4","Total_Trans_Amt","Total_Trans_Ct","Total_Ct_Chng_Q4_Q1","Avg_Utilization_Ratio")
+data_select<-as.factor(data_select)
+simple.model <- glm(Attrition_Flag ~1, data = data_select, family = binomial)
+summary(simple.model)
+
+
+
+#Echantillonnage pour plus tard
+data_quit<-data[(data$Attrition_Flag)=="Quit",]
+data_stay<-data[(data$Attrition_Flag)=="Stay",]
+sample_quit<-sample(1:dim(data_quit)[1],1000)
+sample_Stay<-sample(1:dim(data_stay)[1],1000)
+data_reg<-rbind(data_quit[sample_quit,],data_stay[sample_Stay,])
+table(data_reg$Attrition_Flag)
+
+
 
 # Graphique des corrélations entre chacune des variables
 data_quit%>%
