@@ -29,14 +29,11 @@ if("WRS2" %in% rownames(installed.packages()) == FALSE) {install.packages("WRS2"
 if("tidyverse" %in% rownames(installed.packages()) == FALSE) {install.packages("tidyverse")};library(tidyverse)
 # Regression subset selection, including exhaustive search.
 if("leaps" %in% rownames(installed.packages()) == FALSE) {install.packages("leaps")};library(leaps)
-library(tidyselect)
-# Regression subset selection, including exhaustive search.
-if("leaps" %in% rownames(installed.packages()) == FALSE) {install.packages("leaps")};library(leaps)
 
 ##################################################################################
 # 2 - Import des données 
 ##################################################################################
-setwd("C:/Transway/BI_Data/scripts_R/regression_lineaire/stat2_projet_churn_bank")
+#setwd(".")
 # (10127 matchs)
 data <- read.csv("data/BankChurners.csv", sep = ",")
 
