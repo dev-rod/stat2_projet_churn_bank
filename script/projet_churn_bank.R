@@ -5,7 +5,7 @@
 # TODO : https://www.kaggle.com/josephchan524/bankchurnersclassifier-recall-97-accuracy-95
 
 ##################################################################################
-# 1 - Chargement des librairies 
+# 1 - Chargement des librairies
 ##################################################################################
 library(data.table)
 # gestion des dates
