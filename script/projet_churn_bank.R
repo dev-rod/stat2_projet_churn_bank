@@ -57,19 +57,81 @@ data_quit <- data[(data$Attrition_Flag)=="Quit",]
 categ <- data_quit %>%
     select(Attrition_Flag,Gender, Marital_Status, Card_Category, Income_Category, Education_Level)
 
+#Plot par genre
 categ %>%
     select(Attrition_Flag,Gender) %>%
-    mutate(Gender = ifelse(Gender == "F", "Female", "Male")) %>%
+    mutate(Gender = ifelse(Gender == "F","Female","Male")) %>%
     ggplot(aes(x=Attrition_Flag,fill=Gender)) +
     geom_bar(position="dodge2") +
-    geom_text(aes(y = (..count..)/sum(..count..),
-                  label = paste0(round(prop.table(..count..) * 100), '%')),
-              stat = 'count',
+    geom_text(aes(y = (..count..)/sum(..count..), 
+                  label = paste0(round(prop.table(..count..) * 100), '%')), 
+              stat = 'count', 
               size = 3,
               vjust=-4,
               position = position_dodge(.9))+
     labs(title="Distribution par genre",
+         
          x="Attrition_Flag",y="NB")
+#Plot par Statut marital
+categ %>%
+    select(Attrition_Flag,Marital_Status) %>%
+    ggplot(aes(x=Attrition_Flag,fill=Marital_Status)) +
+    geom_bar(position="dodge2") +
+    geom_text(aes(y = (..count..)/sum(..count..), 
+                  label = paste0(round(prop.table(..count..) * 100), '%')), 
+              stat = 'count', 
+              size = 3,
+              vjust=-4,
+              position = position_dodge(.9))+
+    labs(title="Distribution par statut marital",
+         
+         x="Attrition_Flag",y="NB")
+
+#Plot par carte bancaire
+categ %>%
+    select(Attrition_Flag,Card_Category) %>%
+    ggplot(aes(x=Attrition_Flag,fill=Card_Category))+
+    geom_bar(position="dodge2") +
+    geom_text(aes(y = (..count..)/sum(..count..), 
+                  label = paste0(round(prop.table(..count..) * 100,2), '%')), 
+              stat = 'count', 
+              size = 3,
+              vjust=-4,
+              position = position_dodge(.9))+
+    labs(title="Distribution par type de CB",
+         
+         x="Attrition_Flag",y="NB")
+#Plot par rentr?e financiere
+categ %>%
+    select(Attrition_Flag,Income_Category) %>%
+    ggplot(aes(x=Attrition_Flag,fill=Income_Category)) +
+    geom_bar(position="dodge2") +
+    geom_text(aes(y = (..count..)/sum(..count..), 
+                  label = paste0(round(prop.table(..count..) * 100,2), '%')), 
+              stat = 'count', 
+              size = 3,
+              vjust=-4,
+              position = position_dodge(.9))+
+    labs(title="Distribution par rentr?e financi?re",
+         
+         x="Attrition_Flag",y="NB")
+
+#Plot par niveau d'?tude
+categ %>%
+    select(Attrition_Flag,Education_Level) %>%
+    ggplot(aes(x=Attrition_Flag,fill=Education_Level)) +
+    geom_bar(position="dodge2") +
+    geom_text(aes(y = (..count..)/sum(..count..), 
+                  label = paste0(round(prop.table(..count..) * 100,2), '%')), 
+              stat = 'count', 
+              size = 3,
+              vjust=-4,
+              position = position_dodge(.9))+
+    labs(title="Distribution par niveau d'?tude",
+         
+         x="Attrition_Flag",y="NB")
+
+
 
 # Graphique des corrélations entre chacune des variables
 data_quit %>%
