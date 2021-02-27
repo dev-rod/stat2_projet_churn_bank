@@ -7,12 +7,15 @@
 ##################################################################################
 # 1 - Chargement des librairies
 ##################################################################################
-library(data.table)
+
+# Enhanced data.frame
+if("data.table" %in% rownames(installed.packages()) == FALSE) {install.packages("data.table")};library(data.table)
 # gestion des dates
 if("lubridate" %in% rownames(installed.packages()) == FALSE) {install.packages("lubridate")};library(lubridate)
 # Functions to Accompany J. Fox and S. Weisberg, An R Companion to Applied Regression, Third Edition, Sage, 2019.
 if("car" %in% rownames(installed.packages()) == FALSE) {install.packages("car")};library(car)
 # Several functions are available for calculating the most widely used effect sizes (ES),
+
 # along with their variances, confidence intervals and p-values
 if("compute.es" %in% rownames(installed.packages()) == FALSE) {install.packages("compute.es")};library(compute.es)
 # Graphical and tabular effect displays, e.g., of interactions, for various statistical models with linear predictors.
@@ -34,36 +37,252 @@ if("leaps" %in% rownames(installed.packages()) == FALSE) {install.packages("leap
 if("corrplot" %in% rownames(installed.packages()) == FALSE) {install.packages("corrplot")};library(corrplot)
 # lib de graphes avancés
 if("highcharter" %in% rownames(installed.packages()) == FALSE) {install.packages("highcharter")};library(highcharter)
+# reshape2
+# if("reshape2" %in% rownames(installed.packages()) == FALSE) {install.packages("reshape2")};library(reshape2)
+
+
+# pour ajouter une nouvelle librairie
+# if("" %in% rownames(installed.packages()) == FALSE) {install.packages("")};library()
+
+# les librairies installées
+# library()
 
 ##################################################################################
 # 2 - Import des données 
 ##################################################################################
 
-# (10127 matchs)
 data <- read.csv("data/BankChurners.csv", sep = ",")
-
 # Vérification des types de champs et des valeurs nulles
+# pas de NA
 summary(data)
-str(data$CLIENTNUM)
-
-# Retrait des colonnes 
-# - CLIENTNUM
-# - Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_1
-# - Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_2
+# pas de doublons
+length(unique(data$CLIENTNUM)) # 10127 lignes pour 10127 numeros de compte 
+# les types 
+#str(data)
+# Retrait des colonnes inutiles 
+#   - CLIENTNUM
+#   - Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_1
+#   - Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_2
 data <- data[,-c(1,22,23)]
 
+# --- Attrition_Flag encoding: 0 Existing Customer, 1 Attrited Customer ---
+data<- data %>% mutate(Attrition_Flag =recode(Attrition_Flag, "Attrited Customer" = "1", "Existing Customer" = "0"))
+str(data)
 
-# Séparation des clients qui ont quitté la banque de ceux qui sont resté
-data$Attrition_Flag<-as.character(data$Attrition_Flag)
-data$Attrition_Flag[data$Attrition_Flag=="Existing Customer"]<-"Stay"
-data$Attrition_Flag[data$Attrition_Flag=="Attrited Customer"]<-"Quit"
-data_quit <- data[(data$Attrition_Flag)=="Quit",]
+# les  variables qualitatives
+# 1 Card_Category           : Factor  
+# 2 Attrition_Flag          : Factor 
+# 3 Gender                  : Factor 
+# 4 Education_Level         : Factor 
+# 5 Marital_Status          : Factor 
+# 6 Income_Category         : Factor 
 
-# Analyse de chaque variable de manière séparée
+# les 14 variables quantitatives
+# 1- Months_on_book          : int  
+# 2- Total_Relationship_Count: int  
+# 3- Months_Inactive_12_mon  : int  
+# 4- Contacts_Count_12_mon   : int 
+# 5- Credit_Limit            : num  
+# 6- Total_Revolving_Bal     : int  
+# 7- Avg_Open_To_Buy         : num  
+# 8- Total_Amt_Chng_Q4_Q1    : num  
+# 9- Total_Trans_Amt         : int  
+# 10- Total_Trans_Ct          : int  
+# 11- Total_Ct_Chng_Q4_Q1     : num  
+# 12- Avg_Utilization_Ratio   : num  
+# 13- Customer_Age            : int  
+# 14- Dependent_count         : int  
+
+summary(data)
+
+# 20 colonnes restantes
+length (colnames(data))
+
+##################################################################################
+# 2 - Analyses visuelles
+##################################################################################
+
+# Séparation des clients :  ceux qui ont quitté la banque de ceux qui sont restés
+
+# --- Attrition_Flag encoding: 0 Existing Customer, 1 Attrited Customer ---
+data<- data %>% mutate(Attrition_Flag = recode(Attrition_Flag, "Attrited Customer" = "1", "Existing Customer" = "0"))
+
+data_quit <- data[(data$Attrition_Flag)==1,] # 1627
+data_stay <- data[(data$Attrition_Flag)==0,] # 8500 
+
+    # ???? TEST DE STUDENT ????
+    # pour comparer des groupes dont les effectifs sont différentS : comparaison de moyenne
+    # => test de student : http://www.sthda.com/french/wiki/test-de-student-est-il-toujours-correct-de-comparer-des-moyennes
+    # source('http://www.sthda.com/upload/rquery_t_test.r')
+    # rquery.t.test(x, y = NULL, paired = FALSE, graph = TRUE, ...)
+    # exemple : rquery.t.test(data_quit$Avg_Open_To_Buy, data_stay$Avg_Open_To_Buy)
+    # Error in shapiro.test(x) : sample size must be between 3 and 5000 
+    # ??????????????????????????????????????????????????????????????????????????????????
+
+# 2.1 - Analyses visuelles du dataset complet (data)
+##################################################################################
+
+# Analyse Attrition_Flag en fonction de chaque variable dependant du client
 categ <- data %>%
     select(Attrition_Flag,Gender, Marital_Status, Card_Category, Income_Category, Education_Level)
 
-# Plot par genre
+# tableau de frequences en fonction de Attrition_Flag
+# Gender
+frequence_Gender <- data.frame(table(Gender,Attrition_Flag))
+# frequence des femmes qui partent parmi les clients qui partent 
+ratio_FO <- (frequence_Gender$Freq[frequence_Gender$Gender== "F"& frequence_Gender$Attrition_Flag=="0" ])/(sum(frequence_Gender$Freq[frequence_Gender$Attrition_Flag=="0"]))
+ratio_F1  <- (frequence_Gender$Freq[frequence_Gender$Gender== "F"& frequence_Gender$Attrition_Flag=="1" ])/(sum(frequence_Gender$Freq[frequence_Gender$Attrition_Flag=="1"]))
+# calcul des frequence relative femme /femme+homme 
+
+# => il semble y avoir legerement plus de femme que d'homes parmi les personnes qui résilient'
+# Marital_Status
+    # unique (Marital_Status)
+    # Married  Single   Unknown  Divorced
+frequence_Marital_Status <- data.frame(table(Attrition_Flag,Marital_Status))
+frequence_Marital_Status
+ratio_FO <- (frequence_Marital_Status$Freq[frequence_Marital_Status$Gender== "F"& frequence_Gender$Attrition_Flag=="0" ])/(sum(frequence_Gender$Freq[frequence_Gender$Attrition_Flag=="0"]))
+
+# Card_Category
+frequence_Card_Category <- data.frame(table(Attrition_Flag,Card_Category))
+frequence_Card_Category
+# Income_Category
+frequence_Income_Category <- data.frame(table(Attrition_Flag,Income_Category))
+frequence_Income_Category
+# Education_Level
+frequence_Education_Level <- data.frame(table(Attrition_Flag,Education_Level))
+frequence_Education_Level
+# Months_on_book
+frequence_Months_on_book <- data.frame(table(Attrition_Flag,Months_on_book))
+frequence_Months_on_book
+# Total_Relationship_Count
+frequence_Total_Relationship_Count <- data.frame(table(Attrition_Flag,Total_Relationship_Count))
+frequence_Total_Relationship_Count
+# Contacts_Count_12_mon
+frequence_Total_Relationship_Count <- data.frame(table(Attrition_Flag,Total_Relationship_Count))
+frequence_Total_Relationship_Count
+# Credit_Limit
+frequence_Credit_Limit <- data.frame(table(Attrition_Flag,Credit_Limit))
+frequence_Credit_Limit
+# Total_Revolving_Bal
+frequence_Total_Revolving_Bal <- data.frame(table(Attrition_Flag,Total_Revolving_Bal))
+frequence_Total_Revolving_Bal
+# Avg_Open_To_Buy
+frequence_Avg_Open_To_Buy <- data.frame(table(Attrition_Flag,Avg_Open_To_Buy))
+frequence_Avg_Open_To_Buy
+# Total_Amt_Chng_Q4_Q1
+frequence_Total_Amt_Chng_Q4_Q1 <- data.frame(table(Attrition_Flag,Total_Amt_Chng_Q4_Q1))
+frequence_Total_Amt_Chng_Q4_Q1
+# Avg_Open_To_Buy
+frequence_Avg_Open_To_Buy <- data.frame(table(Attrition_Flag,Avg_Open_To_Buy))
+frequence_Avg_Open_To_Buy
+# Total_Amt_Chng_Q4_Q1
+frequence_Avg_Open_To_Buy <- data.frame(table(Attrition_Flag,Avg_Open_To_Buy))
+frequence_Avg_Open_To_Buy
+# Total_Trans_Amt
+frequence_Total_Trans_Amt <- data.frame(table(Attrition_Flag,Total_Trans_Amt))
+frequence_Total_Trans_Amt
+# Dependent_count
+frequence_Dependent_count <- data.frame(table(Attrition_Flag,Dependent_count))
+frequence_Dependent_count
+# Customer_Age
+# frequence_Customer_Age <- data.frame(table(Attrition_Flag,Customer_Age))
+# frequence_Customer_Age
+# # Avg_Utilization_Ratio
+# frequence_Avg_Utilization_Ratio <- data.frame(table(Attrition_Flag,Avg_Utilization_Ratio))
+# frequence_Avg_Utilization_Ratio
+# # Total_Ct_Chng_Q4_Q1 
+# frequence_Total_Ct_Chng_Q4_Q1 <- data.frame(table(Attrition_Flag,Total_Ct_Chng_Q4_Q1))
+# frequence_Total_Ct_Chng_Q4_Q1
+# # Total_Trans_Ct
+# frequence_Total_Trans_Ct <- data.frame(table(Attrition_Flag,Total_Trans_Ct))
+# frequence_Total_Trans_Ct
+
+
+
+    
+
+# Plot attrition par genre
+categ %>%
+    select(Attrition_Flag, Gender) %>%
+    mutate(Gender = ifelse(Gender == "F","Female","Male"))
+    ggplot(aes(x=Attrition_Flag,fill=Gender)) +
+    geom_bar(position="dodge2") +
+    geom_text(aes(y = (..count..)/sum(..count..),
+                  label = paste0(round(prop.table(..count..) * 100), '%')),
+              stat = 'count',
+              size = 3,
+              vjust=-4,
+              position = position_dodge(.9))+
+    labs(title="Distribution par genre",
+         x="Attrition_Flag",y="NB")
+
+# Plot par Statut marital
+categ %>%
+    select(Attrition_Flag, Marital_Status) %>%
+    ggplot(aes(x=Attrition_Flag,fill=Marital_Status)) +
+    geom_bar(position="dodge2") +
+    geom_text(aes(y = (..count..)/sum(..count..), 
+                  label = paste0(round(prop.table(..count..) * 100), '%')), 
+              stat = 'count', 
+              size = 3,
+              vjust=-4,
+              position = position_dodge(.9))+
+    labs(title="Distribution par statut marital",
+         x="Attrition_Flag",y="NB")
+
+# Plot par carte bancaire
+categ %>%
+    select(Attrition_Flag, Card_Category) %>%
+    ggplot(aes(x=Attrition_Flag,fill=Card_Category))+
+    geom_bar(position="dodge2") +
+    geom_text(aes(y = (..count..)/sum(..count..), 
+                  label = paste0(round(prop.table(..count..) * 100,2), '%')), 
+              stat = 'count', 
+              size = 3,
+              vjust=-4,
+              position = position_dodge(.9))+
+    labs(title="Distribution par type de CB",
+         x="Attrition_Flag", y="NB")
+
+# Plot par rentrée financiere
+categ %>%
+    select(Attrition_Flag, Income_Category) %>%
+    ggplot(aes(x=Attrition_Flag,fill=Income_Category)) +
+    geom_bar(position="dodge2") +
+    geom_text(aes(y = (..count..)/sum(..count..), 
+                  label = paste0(round(prop.table(..count..) * 100,2), '%')), 
+              stat = 'count', 
+              size = 3,
+              vjust=-4,
+              position = position_dodge(.9))+
+    labs(title="Distribution par rentrée financière",
+         x="Attrition_Flag",y="NB")
+
+# Plot par niveau d'étude
+categ %>%
+    select(Attrition_Flag, Education_Level) %>%
+    ggplot(aes(x=Attrition_Flag,fill=Education_Level)) +
+    geom_bar(position="dodge2") +
+    geom_text(aes(y = (..count..)/sum(..count..), 
+                  label = paste0(round(prop.table(..count..) * 100,1), '%')), 
+              stat = 'count', 
+              size = 3,
+              vjust=-4,
+              position = position_dodge(.9))+
+    labs(title="Distribution par niveau d'étude",
+         x="Attrition_Flag",y="NB")
+
+
+
+
+# 2.2 - Analyses visuelles du dataset des personnes qui ont résiliées  (data_quit)
+##################################################################################
+
+# Analyse de chaque variable de manière séparée
+categ <- data_quit %>%
+    select(Attrition_Flag,Gender, Marital_Status, Card_Category, Income_Category, Education_Level)
+
+# Plot attrition par genre
 categ %>%
     select(Attrition_Flag, Gender) %>%
     mutate(Gender = ifelse(Gender == "F","Female","Male")) %>%
@@ -133,6 +352,95 @@ categ %>%
               position = position_dodge(.9))+
     labs(title="Distribution par niveau d'étude",
          x="Attrition_Flag",y="NB")
+
+# 2.2 - Analyses visuelles du dataset des personnes qui ont résiliées  (data_quit)
+##################################################################################
+
+# Analyse de chaque variable de manière séparée
+categ <- data_quit %>%
+    select(Attrition_Flag,Gender, Marital_Status, Card_Category, Income_Category, Education_Level)
+
+# Plot attrition par genre
+categ %>%
+    select(Attrition_Flag, Gender) %>%
+    mutate(Gender = ifelse(Gender == "F","Female","Male")) %>%
+    ggplot(aes(x=Attrition_Flag,fill=Gender)) +
+    geom_bar(position="dodge2") +
+    geom_text(aes(y = (..count..)/sum(..count..), 
+                  label = paste0(round(prop.table(..count..) * 100), '%')), 
+              stat = 'count', 
+              size = 3,
+              vjust=-4,
+              position = position_dodge(.9))+
+    labs(title="Distribution par genre",
+         x="Attrition_Flag",y="NB")
+
+# Plot par Statut marital
+categ %>%
+    select(Attrition_Flag, Marital_Status) %>%
+    ggplot(aes(x=Attrition_Flag,fill=Marital_Status)) +
+    geom_bar(position="dodge2") +
+    geom_text(aes(y = (..count..)/sum(..count..), 
+                  label = paste0(round(prop.table(..count..) * 100), '%')), 
+              stat = 'count', 
+              size = 3,
+              vjust=-4,
+              position = position_dodge(.9))+
+    labs(title="Distribution par statut marital",
+         x="Attrition_Flag",y="NB")
+
+# Plot par carte bancaire
+categ %>%
+    select(Attrition_Flag, Card_Category) %>%
+    ggplot(aes(x=Attrition_Flag,fill=Card_Category))+
+    geom_bar(position="dodge2") +
+    geom_text(aes(y = (..count..)/sum(..count..), 
+                  label = paste0(round(prop.table(..count..) * 100,2), '%')), 
+              stat = 'count', 
+              size = 3,
+              vjust=-4,
+              position = position_dodge(.9))+
+    labs(title="Distribution par type de CB",
+         x="Attrition_Flag", y="NB")
+
+# Plot par rentrée financiere
+categ %>%
+    select(Attrition_Flag, Income_Category) %>%
+    ggplot(aes(x=Attrition_Flag,fill=Income_Category)) +
+    geom_bar(position="dodge2") +
+    geom_text(aes(y = (..count..)/sum(..count..), 
+                  label = paste0(round(prop.table(..count..) * 100,2), '%')), 
+              stat = 'count', 
+              size = 3,
+              vjust=-4,
+              position = position_dodge(.9))+
+    labs(title="Distribution par rentrée financière",
+         x="Attrition_Flag",y="NB")
+
+# Plot par niveau d'étude
+categ %>%
+    select(Attrition_Flag, Education_Level) %>%
+    ggplot(aes(x=Attrition_Flag,fill=Education_Level)) +
+    geom_bar(position="dodge2") +
+    geom_text(aes(y = (..count..)/sum(..count..), 
+                  label = paste0(round(prop.table(..count..) * 100,2), '%')), 
+              stat = 'count', 
+              size = 3,
+              vjust=-4,
+              position = position_dodge(.9))+
+    labs(title="Distribution par niveau d'étude",
+         x="Attrition_Flag",y="NB")
+
+
+
+
+
+
+
+
+
+
+
 
 #CLASSE
 data_select<-data
