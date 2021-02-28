@@ -59,9 +59,9 @@ if ("tidyverse" %in% rownames(installed.packages()) == FALSE) {
     install.packages("tidyverse")
 }
 library(tidyverse)
-if ("dplyr" %in% rownames(installed.packages()) == FALSE) {
-    install.packages("dplyr")
-}
+# # if ("dplyr" %in% rownames(installed.packages()) == FALSE) {
+#     install.packages("dplyr")
+# }
 library(dplyr)
 # Regression subset selection, including exhaustive search.
 if ("leaps" %in% rownames(installed.packages()) == FALSE) {
@@ -79,8 +79,18 @@ if ("highcharter" %in% rownames(installed.packages()) == FALSE) {
 }
 library(highcharter)
 
+# Tools for reordering and modifying factor levels  with Categorical Variables (Factors)
+if("forcats" %in% rownames(installed.packages()) == FALSE) {install.packages("forcats")};library(forcats)
+
+# CONFLIT : confilt de select() entre les deux librairies
+require(MASS)
+require(dplyr)
+# puis utiliser dplyr::select()
+
 # pour ajouter une nouvelle librairie
 # if("" %in% rownames(installed.packages()) == FALSE) {install.packages("")};library()
+
+
 
 # les librairies installées
 # library()
@@ -112,14 +122,6 @@ length(unique(data$CLIENTNUM))
 #   - Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_2
 data <- data[, -c(1, 22, 23)]
 
-# modification Attrition_Flag : 0 Existing Customer, 1 Attrited Customer ---
-data <-
-    data %>% mutate(Attrition_Flag = recode(
-        Attrition_Flag,
-        "Attrited Customer" = "1",
-        "Existing Customer" = "0"
-    ))
-ls.str(data)
 
 # ---la variable a expliquer :Attrition_Flag ( Factor ) => regression logistique
 
@@ -157,17 +159,39 @@ length (colnames(data))
 ##################################################################################-
 
 ### Creation de deux dataframe ##############################
-# Séparation des clients :  ceux qui ont quitté la banque de ceux qui sont restés
-# Modification de l' Attrition_Flag : 0 Existing Customer, 1 Attrited Customer ---
-data <-
-    data %>% mutate(Attrition_Flag = recode(
-        Attrition_Flag,
-        "Attrited Customer" = "1",
-        "Existing Customer" = "0"
-    ))
-# les deux datasets
+#### Séparation des clients :  ceux qui ont quitté la banque de ceux qui sont restés
+
+# modification Attrition_Flag : 0 Existing Customer, 1 Attrited Customer ---
+
+
+data$Attrition_Flag<-as.character(data$Attrition_Flag)
+data$Attrition_Flag[data$Attrition_Flag=="Existing Customer"]<-0
+data$Attrition_Flag[data$Attrition_Flag=="Attrited Customer"]<-1
+data$Attrition_Flag <- as_factor(data$Attrition_Flag)
+
+# data <-data %>% mutate(Attrition_Flag = recode(Attrition_Flag, "Attrited Customer" = 1,"Existing Customer" = 0))
+# data$Attrition_Flag <- as_factor(data$Attrition_Flag)
+# str(data$Attrition_Flag )
+
+
+#### les deux datasets
 data_quit <- data[(data$Attrition_Flag) == 1, ] # 1627
 data_stay <- data[(data$Attrition_Flag) == 0, ] # 8500
+str(data_quit)
+
+#### Conversion des facteurs et réordonnancement des niveaux 
+# data$Attrition_Flag <- as_factor(data$Attrition_Flag)
+# data$Gender <- as_factor(data$Gender)
+# data$Education_Level <- as_factor(data$Education_Level)
+# data$Education_Level <- fct_relevel(data$Education_Level, "Unknown", "Uneducated", "High School", "College", "Graduate", "Post-Graduate", "Doctorate")
+# data$Marital_Status <- as_factor(data$Marital_Status)
+# data$Marital_Status <- fct_relevel(data$Marital_Status, "Unknown", "Single", "Married", "Divorced")
+# data$Income_Category <- as_factor(data$Income_Category)
+# data$Income_Category <- fct_relevel(data$Income_Category, "Unknown", "Less than $40K", "$40K - $60K", "$60K - $80K", "$80K - $120K", "$120K +")
+# data$Card_Category <- as_factor(data$Card_Category)
+# data$Card_Category <- fct_relevel(data$Card_Category, "Blue", "Silver", "Gold", "Platinum")
+
+# str(data)
 
 ### Analyses des variables qualitatives ### ----
 
@@ -197,11 +221,16 @@ ratio_F[2]  <-
 ##### Plot attrition par genre ----
 
 # pour les desabonnements(Attrited Customers )
+require(MASS)
+require(dplyr)
+# mtcars %>%
+#     dplyr::select(mpg)
+par(mfrow=c(1,2))
 data_quit %>%
-    select(Attrition_Flag, Gender) %>%
-    mutate(Gender = ifelse(Gender == "F", "Female", "Male")) %>%
+    dplyr::select(Attrition_Flag, Gender) %>%
+    mutate (Gender = ifelse(Gender == "F", "Female", "Male")) %>%
     ggplot(aes(x = Attrition_Flag, fill = Gender)) +
-    geom_bar(position = "dodge2") +
+    geom_bar(position = "dodge2")+
     geom_text(
         aes(
             y = (..count..) / sum(..count..),
@@ -210,14 +239,13 @@ data_quit %>%
         stat = 'count',
         size = 3,
         vjust = -4,
-        position = position_dodge(.9)
-    ) +
+        position = position_dodge(.9))+
     labs(title = "Distribution par genre",
          x = "Attrited Customers", y = "NB")
 
 # pour les clients (Existing Customer)
 data_stay %>%
-    select(Attrition_Flag, Gender) %>%
+    dplyr::select(Attrition_Flag, Gender) %>%
     mutate(Gender = ifelse(Gender == "F", "Female", "Male")) %>%
     ggplot(aes(x = Attrition_Flag, fill = Gender)) +
     geom_bar(position = "dodge2") +
@@ -314,7 +342,7 @@ ratio_Divorced[2] <-
 
 # pour les desabonnements(Attrited Customers )
 data_quit %>%
-    select(Attrition_Flag, Marital_Status) %>%
+    dplyr::select(Attrition_Flag, Marital_Status) %>%
     ggplot(aes(x = Attrition_Flag, fill = Marital_Status)) +
     geom_bar(position = "dodge2") +
     geom_text(
@@ -332,7 +360,7 @@ data_quit %>%
 
 #  pour les clients
 data_stay %>%
-    select(Attrition_Flag, Marital_Status) %>%
+    dplyr::select(Attrition_Flag, Marital_Status) %>%
     ggplot(aes(x = Attrition_Flag, fill = Marital_Status)) +
     geom_bar(position = "dodge2") +
     geom_text(
@@ -436,7 +464,7 @@ ratio_Silver[2] <-
 # pour les desabonnements(Attrited Customers )
 
 data_quit %>%
-    select(Attrition_Flag, Card_Category) %>%
+    dplyr::select(Attrition_Flag, Card_Category) %>%
     ggplot(aes(x = Attrition_Flag, fill = Card_Category)) +
     geom_bar(position = "dodge2") +
     geom_text(
@@ -453,7 +481,7 @@ data_quit %>%
          x = "Attrited Customers", y = "NB")
 #  pour les clients 
 data_quit %>%
-    select(Attrition_Flag, Card_Category) %>%
+    dplyr::select(Attrition_Flag, Card_Category) %>%
     ggplot(aes(x = Attrition_Flag, fill = Card_Category)) +
     geom_bar(position = "dodge2") +
     geom_text(
@@ -581,7 +609,7 @@ ratio_un[2] <-
 
 # pour les desabonnements(Attrited Customers )
 data_quit %>%
-    select(Attrition_Flag, Income_Category) %>%
+    dplyr::select(Attrition_Flag, Income_Category) %>%
     ggplot(aes(x=Attrition_Flag,fill=Income_Category)) +
     geom_bar(position="dodge2") +
     geom_text(aes(y = (..count..)/sum(..count..),
@@ -595,7 +623,7 @@ data_quit %>%
 
 #  pour les clients 
 data_stay %>%
-    select(Attrition_Flag, Income_Category) %>%
+    dplyr::select(Attrition_Flag, Income_Category) %>%
     ggplot(aes(x=Attrition_Flag,fill=Income_Category)) +
     geom_bar(position="dodge2") +
     geom_text(aes(y = (..count..)/sum(..count..),
@@ -742,7 +770,7 @@ ratio_Unknown[2] <-
 # pour les desabonnements(Attrited Customers )
 par(mfrow=c(1,2))
 data_quit %>%
-        select(Attrition_Flag, Education_Level) %>%
+        dplyr::select(Attrition_Flag, Education_Level) %>%
         ggplot(aes(x=Attrition_Flag,fill=Education_Level)) +
         geom_bar(position="dodge2") +
         geom_text(aes(y = (..count..)/sum(..count..),
@@ -756,7 +784,7 @@ data_quit %>%
 
 #  pour les clients 
 data_stay %>%
-        select(Attrition_Flag, Education_Level) %>%
+        dplyr::select(Attrition_Flag, Education_Level) %>%
         ggplot(aes(x=Attrition_Flag,fill=Education_Level)) +
         geom_bar(position="dodge2") +
         geom_text(aes(y = (..count..)/sum(..count..),
@@ -891,6 +919,17 @@ pCustumer_Age
 
 
 
+
+
+
+#partage du dataset en 70/30 
+
+intrain<-createDataPartition(data$Attrition_Flag,p=0.7,
+                             list = F,
+                             times = 1)
+# creation des datasets: testing (30%) & training (70%) pour minimiser le ridque de surentraienemnt 
+training <-data[intrain,]
+testing <-data[-intrain,]
 
 # ---- modification des classes lorsqu'il y a des trop fort desequilibres
 
