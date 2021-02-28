@@ -1,0 +1,109 @@
+---
+title: "Predict Churning customers"
+author: "Louis Hiel, Rodrique Bernard & Christine Fouque"
+date: "26 février 2021"
+output: html_document
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+
+
+
+
+
+
+#
+
+##################################################################################
+# 1 - Chargement des librairies ####
+##################################################################################
+```{r}
+# Enhanced data.frame
+if ("data.table" %in% rownames(installed.packages()) == FALSE) {
+    install.packages("data.table")
+}
+library(data.table)
+# gestion des dates
+if ("lubridate" %in% rownames(installed.packages()) == FALSE) {
+    install.packages("lubridate")
+}
+library(lubridate)
+# R Companion to Applied Regression (Functions to Accompany J. Fox and S. Weisberg, AThird Edition, Sage, 2019.)
+if ("car" %in% rownames(installed.packages()) == FALSE) {
+    install.packages("car")
+}
+library(car)
+# Several functions are available for calculating the most widely used effect sizes (ES),
+# along with their variances, confidence intervals and p-values
+if ("compute.es" %in% rownames(installed.packages()) == FALSE) {
+    install.packages("compute.es")
+}
+library(compute.es)
+# Graphical and tabular effect displays, e.g., of interactions, for various statistical models with linear predictors.
+if ("effects" %in% rownames(installed.packages()) == FALSE) {
+    install.packages("effects")
+}
+library(effects)
+# Create Elegant Data Visualisations Using the Grammar of Graphics
+if ("ggplot2" %in% rownames(installed.packages()) == FALSE) {
+    install.packages("ggplot2")
+}
+library(ggplot2)
+# Simultaneous Inference in General Parametric Models
+if ("multcomp" %in% rownames(installed.packages()) == FALSE) {
+    install.packages("multcomp")
+}
+library(multcomp)
+# Package for Analysis of Space-Time Ecological Series
+if ("pastecs" %in% rownames(installed.packages()) == FALSE) {
+    install.packages("pastecs")
+}
+library(pastecs)
+# A Collection of Robust Statistical Methods
+if ("WRS2" %in% rownames(installed.packages()) == FALSE) {
+    install.packages("WRS2")
+}
+library(WRS2)
+# set of packages that work in harmony because they share common data representations and 'API' design.
+if ("tidyverse" %in% rownames(installed.packages()) == FALSE) {
+    install.packages("tidyverse")
+}
+library(tidyverse)
+if ("dplyr" %in% rownames(installed.packages()) == FALSE) {
+    install.packages("dplyr")
+}
+library(dplyr)
+# Regression subset selection, including exhaustive search.
+if ("leaps" %in% rownames(installed.packages()) == FALSE) {
+    install.packages("leaps")
+}
+library(leaps)
+# Graphes de corrélation
+if ("corrplot" %in% rownames(installed.packages()) == FALSE) {
+    install.packages("corrplot")
+}
+library(corrplot)
+# lib de graphes avancés
+if ("highcharter" %in% rownames(installed.packages()) == FALSE) {
+    install.packages("highcharter")
+}
+library(highcharter)
+
+# pour ajouter une nouvelle librairie
+# if("" %in% rownames(installed.packages()) == FALSE) {install.packages("")};library()
+
+# les librairies installées
+# library()
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+```{r}
+
+```
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
