@@ -1,3 +1,21 @@
+---
+title: "Predict Churning customers"
+author: "Louis Hiel, Rodrique Bernard & Christine Fouque"
+date: "26 février 2021"
+output: html_document
+---
+---
+    output:
+    word_document:reference_docx: "template.docx"
+---
+library(knitr)
+
+??knitr
+
+```
+
+```
+
 # Objectif: Prédire la résiliation d’un client bancaires
 # Kaggle: https://www.kaggle.com/sakshigoyal7/credit-card-customers
 # Jeux d’apprentissage : 10 K lignes / 23 colonnes
@@ -7,8 +25,8 @@
 ##################################################################################-
 # 1 - Chargement des librairies ####
 ##################################################################################-
-# ```{r}
-# data.frame amélioré
+
+# Enhanced data.frame
 if ("data.table" %in% rownames(installed.packages()) == FALSE) {
     install.packages("data.table")
 }
@@ -85,17 +103,12 @@ library(highcharter)
 # les librairies installées
 # library()
 
-# ```
-
 ##################################################################################-
 # 2 - Import des données  ####
 ##################################################################################-
 
-# ```{r}
 data <- read.csv("data/BankChurners.csv", sep = ",")
-# ```
-
-##### Vérification des types de champs et des valeurs nulles
+# Vérification des types de champs et des valeurs nulles
 
 summary(data)
 # pas de NA
@@ -124,29 +137,6 @@ ls.str(data)
 # ---la variable a expliquer :Attrition_Flag ( Factor ) => regression logistique
 
 
-# ---les  variables qualitatives
-# 1 Card_Category           : Factor
-# 3 Gender                  : Factor
-# 4 Education_Level         : Factor
-# 5 Marital_Status          : Factor
-# 6 Income_Category         : Factor
-
-#--- les 14 variables quantitatives
-# 1- Months_on_book          : int
-# 2- Total_Relationship_Count: int
-# 3- Months_Inactive_12_mon  : int
-# 4- Contacts_Count_12_mon   : int
-# 5- Credit_Limit            : num
-# 6- Total_Revolving_Bal     : int
-# 7- Avg_Open_To_Buy         : num
-# 8- Total_Amt_Chng_Q4_Q1    : num
-# 9- Total_Trans_Amt         : int
-# 10- Total_Trans_Ct          : int
-# 11- Total_Ct_Chng_Q4_Q1     : num
-# 12- Avg_Utilization_Ratio   : num
-# 13- Customer_Age            : int
-# 14- Dependent_count         : int
-
 summary(data)
 
 # 20 colonnes restantes
@@ -156,7 +146,7 @@ length (colnames(data))
 # 3 - Analyse exploratoire des données (EDA)  ####
 ##################################################################################-
 
-### Creation de deux dataframe ##############################
+######################## Creation de deux dataframe ##############################
 # Séparation des clients :  ceux qui ont quitté la banque de ceux qui sont restés
 # Modification de l' Attrition_Flag : 0 Existing Customer, 1 Attrited Customer ---
 data <-
@@ -169,34 +159,31 @@ data <-
 data_quit <- data[(data$Attrition_Flag) == 1, ] # 1627
 data_stay <- data[(data$Attrition_Flag) == 0, ] # 8500
 
-### Analyses des variables qualitatives ### ----
-
+######################## Analyses des variables qualitatives  ##############################
 attach(data)
-
 #### Gender ####
 
-##### tableaux de frequences par Attriction_Flag----
 
-#  les modalités
+# tableaux de frequences ---
 unique (Gender)
-
-#  tableau de contingences
 frequence_Gender <- data.frame(table(Gender, Attrition_Flag))
-
+frequence_Gender
 ratio_F <- c("0", "1")
+# frequence des femmes qui partent parmi les clients qui partent
+
 ratio_F[1] <-
     round((frequence_Gender$Freq[frequence_Gender$Gender == "F" &
                                      frequence_Gender$Attrition_Flag == "0"]) / (sum(frequence_Gender$Freq[frequence_Gender$Attrition_Flag ==
-                                                                                                              "0"])), 3)
+                                                                                                               "0"])), 3)
+#   -parmi les clients qui partent
 ratio_F[2]  <-
     round((frequence_Gender$Freq[frequence_Gender$Gender == "F" &
                                      frequence_Gender$Attrition_Flag == "1"]) / (sum(frequence_Gender$Freq[frequence_Gender$Attrition_Flag ==
                                                                                                                "1"])), 3)
-
-
-##### Plot attrition par genre ----
-
-# pour les desabonnements(Attrited Customers )
+(ratio_F)
+#  es femmes sont surrepresentées parmi les clients qui résilient : 57 % contre 52 %
+#  peut etre parce que ce sont svt les femmes dans un couples sui s'ocuoent de l'administratifs?
+# Plot attrition par genre
 data_quit %>%
     select(Attrition_Flag, Gender) %>%
     mutate(Gender = ifelse(Gender == "F", "Female", "Male")) %>%
@@ -214,8 +201,6 @@ data_quit %>%
     ) +
     labs(title = "Distribution par genre",
          x = "Attrited Customers", y = "NB")
-
-# pour les clients (Existing Customer)
 data_stay %>%
     select(Attrition_Flag, Gender) %>%
     mutate(Gender = ifelse(Gender == "F", "Female", "Male")) %>%
@@ -233,31 +218,18 @@ data_stay %>%
     ) +
     labs(title = "Distribution par genre",
          x = "Existing Customer", y = "NB")
-
-# Resultats variable Gender ----
-    # parmi Existing Customer "0.521" soit 52.1 % 
-    # Attrited Customers : "0.572" soit 57.2 %
-    # 57 % des personnes aant fermées leur compte sont des femmes tandis que 52 % des clients de la 
-    # sont des femmes. Les femmes sont donc en sur representation parmi les desabonnés avec une différence de proportion de 5%.
-
-
-#### Marital_Status #### 
-#####frequences des modalités en fonction de l'Attrition_Flag ----
-
-# Les modalités
+# Marital_Status ----
 # unique (Marital_Status)
 # Married  Single   Unknown  Divorced
 
-# tableau de contingences
-frequence_Marital_Status <-
-    data.frame(table(Attrition_Flag, Marital_Status))
-
-# les vecteurs pour les ratio par modalités
 # ratio_Divorced<- c("0","1")
 # ratio_Unknown<- c("0","1")
 # ratio_Single<- c("0","1")
 # ratio_Married <- c("0","1")
 
+frequence_Marital_Status <-
+    data.frame(table(Attrition_Flag, Marital_Status))
+barplot((table(Attrition_Flag, Marital_Status)))
 ratio_Married[1] <-
     round((frequence_Marital_Status$Freq[frequence_Marital_Status$Marital_Status ==
                                              "Married" &
@@ -269,7 +241,8 @@ ratio_Married[2] <-
                                              frequence_Marital_Status$Attrition_Flag == "1"]) / (sum(frequence_Marital_Status$Freq[frequence_Marital_Status$Attrition_Flag ==
                                                                                                                                        "1"])), 3)
 # > ratio_Married
-# "0.468" "0.436" 
+# "0.468" "0.436" => parmi les mariés on trouve legerement plus de personnes qui restent abonnés ( -3%)
+
 
 ratio_Single[1] <-
     round((frequence_Marital_Status$Freq[frequence_Marital_Status$Marital_Status ==
@@ -282,7 +255,8 @@ ratio_Single[2] <-
                                              frequence_Marital_Status$Attrition_Flag == "1"]) / (sum(frequence_Marital_Status$Freq[frequence_Marital_Status$Attrition_Flag ==
                                                                                                                                        "1"])), 3)
 # > ratio_Single
-# "0.385" "0.411" 
+# "0.385" "0.411" => parmi les celibataires, on trouve legerement plus de personnes qui se desabonnent (+2.6 %)
+
 
 ratio_Unknown[1] <-
     round((frequence_Marital_Status$Freq[frequence_Marital_Status$Marital_Status ==
@@ -295,7 +269,7 @@ ratio_Unknown[2] <-
                                              frequence_Marital_Status$Attrition_Flag == "1"]) / (sum(frequence_Marital_Status$Freq[frequence_Marital_Status$Attrition_Flag ==
                                                                                                                                        "1"])), 3)
 # > ratio_Unknown
-# "0.073" "0.079"
+# "0.073" "0.079" => parmi les statut inconnus on retrouve une proportion tres legerement plus elevée de clients qui partent  (+0.6%)
 
 ratio_Divorced[1] <-
     round((frequence_Marital_Status$Freq[frequence_Marital_Status$Marital_Status ==
@@ -308,71 +282,18 @@ ratio_Divorced[2] <-
                                              frequence_Marital_Status$Attrition_Flag == "1"]) / (sum(frequence_Marital_Status$Freq[frequence_Marital_Status$Attrition_Flag ==
                                                                                                                                        "1"])), 3)
 # > ratio_Divorced
-# "0.074" "0.074" 
- 
-##### Plot attrition par statut marital ----
-
-# pour les desabonnements(Attrited Customers )
-data_quit %>%
-    select(Attrition_Flag, Marital_Status) %>%
-    ggplot(aes(x = Attrition_Flag, fill = Marital_Status)) +
-    geom_bar(position = "dodge2") +
-    geom_text(
-        aes(
-            y = (..count..) / sum(..count..),
-            label = paste0(round(prop.table(..count..) * 100), '%')
-        ),
-        stat = 'count',
-        size = 3,
-        vjust = -4,
-        position = position_dodge(.9)
-    ) +
-    labs(title = "Distribution par statut marital",
-         x = "Attrited Customers", y = "NB")
-
-#  pour les clients
-data_stay %>%
-    select(Attrition_Flag, Marital_Status) %>%
-    ggplot(aes(x = Attrition_Flag, fill = Marital_Status)) +
-    geom_bar(position = "dodge2") +
-    geom_text(
-        aes(
-            y = (..count..) / sum(..count..),
-            label = paste0(round(prop.table(..count..) * 100), '%')
-        ),
-        stat = 'count',
-        size = 3,
-        vjust = -4,
-        position = position_dodge(.9)
-    ) +
-    labs(title = "Distribution par statut marital",
-         x = "Existing Custumers", y = "NB")
-
-##### Les resultats ----
-# > ratio_Divorced
 # "0.074" "0.074" => parmi les divorcés on retrouve la meme proportion de client s qui partent que ceux qui restent.
-# > ratio_Unknown
-# "0.073" "0.079" => parmi les statut inconnus on retrouve une proportion tres legerement plus elevée de clients qui partent  (+0.6%)
-# => peu de différence de proportion pour les divorcés et les statuts inconnus.
-# > ratio_Single
-# "0.385" "0.411" => parmi les celibataires, on trouve legerement plus de personnes qui se desabonnent (+2.6 %)
-# > ratio_Married
-# "0.468" "0.436" => parmi les mariés on trouve legerement plus de personnes qui restent abonnés ( -3%)
+
 #  = > il peut etre interessant de regrouper les classes divorcés et Unknown qui semblent avoir des proportions identiques
 
-#### Card_Category  ----
 
-#####frequences des modalités en fonction de l'Attrition_Flag 
 
-# Les modalités
+# Card_Category ----
 # unique (Card_Category)
 # Blue Gold Platinum Silver
 
-# tableau de contingences
 frequence_Card_Category <-
     data.frame(table(Attrition_Flag, Card_Category))
-
-# vecteurs pour les ratio en fonction du types de carte de credit 
 
 ratio_Blue <- c("0", "1")
 ratio_Gold <- c("0", "1")
@@ -431,69 +352,13 @@ ratio_Silver[2] <-
 # > ratio_Silver
 #  "0.056" "0.050"  => parmi les clients "carte Silver" peu de différence entre clients qui partent et qui restent (-0.6 %)
 
-##### Plot attrition par types de cartes de crédits ----
-
-# pour les desabonnements(Attrited Customers )
-
-data_quit %>%
-    select(Attrition_Flag, Card_Category) %>%
-    ggplot(aes(x = Attrition_Flag, fill = Card_Category)) +
-    geom_bar(position = "dodge2") +
-    geom_text(
-        aes(
-            y = (..count..) / sum(..count..),
-            label = paste0(round(prop.table(..count..) * 100, 2), '%')
-        ),
-        stat = 'count',
-        size = 3,
-        vjust = -4,
-        position = position_dodge(.9)
-    ) +
-    labs(title = "Distribution par type de CB",
-         x = "Attrited Customers", y = "NB")
-#  pour les clients 
-data_quit %>%
-    select(Attrition_Flag, Card_Category) %>%
-    ggplot(aes(x = Attrition_Flag, fill = Card_Category)) +
-    geom_bar(position = "dodge2") +
-    geom_text(
-        aes(
-            y = (..count..) / sum(..count..),
-            label = paste0(round(prop.table(..count..) * 100, 2), '%')
-        ),
-        stat = 'count',
-        size = 3,
-        vjust = -4,
-        position = position_dodge(.9)
-    ) +
-    labs(title = "Distribution par type de CB",
-         x = "Existing custumes", y = "NB")
-
-#####Les resultats ---- 
 #  la proportion de catégorie de carte ne semble pas etre tres différente entre abonnés et desabonnés
-#  On observe pour ratio_Silver la plus grosse différence de pourcantage dans les deux groupes est de 0.6 %.
-# > ratio_Gold
-#  "0.011" "0.013" => parmi les clients "carte Gold" peu de différence entre cleints qui partent et qui restent (+0.02%)
-# > ratio_Blue
-#  "0.931" "0.934" => parmi les clients "carte Blue" peu de différence entre clients qui partent et qui restent (+0.03%)
-# > ratio_Platinum
-# "0.002" "0.003" => parmi les clients "carte Platinum" peu de différence entre clients qui partent et qui restent (+0.1%)
-# > ratio_Silver
-#  "0.056" "0.050"  => parmi les clients "carte Silver" peu de différence entre clients qui partent et qui restent (-0.6 %)
 
-#### Income_Category ----
-
-##### les frequences de chaque classe en fonction de l'Attrition_Flag
-
-#  les modalités
+# Income_Category ----
 # unique (Income_Category)
 # 6 classes : $120K +, $40K - $60K, $60K - $80K, $80K - $120K, Less than $40K, Unknown
-
-#  tableau de contingeences
 frequence_Income_Category <-
     data.frame(table(Attrition_Flag, Income_Category))
-
-#  vecteurs des ratios
 
 ratio_moins40 <- c("0", "1")
 ratio_40_60 <- c("0", "1")
@@ -574,65 +439,26 @@ ratio_un[2] <-
                                                                                                                                           "1"])), 3)
 # > ratio_un        # "0.109" "0.115" parmi les "Unknown", on observe une proportion legerement plus forte chez les desabonnés (+0.6%)
 
-
-
-
-##### Plot attrition par classe de revenus ----
-
-# pour les desabonnements(Attrited Customers )
-data_quit %>%
-    select(Attrition_Flag, Income_Category) %>%
-    ggplot(aes(x=Attrition_Flag,fill=Income_Category)) +
-    geom_bar(position="dodge2") +
-    geom_text(aes(y = (..count..)/sum(..count..),
-                  label = paste0(round(prop.table(..count..) * 100,2), '%')),
-              stat = 'count',
-              size = 3,
-              vjust=-4,
-              position = position_dodge(.9))+
-    labs(title="Distribution par rentrée financière",
-         x="Attrited Customers",y="NB")
-
-#  pour les clients 
-data_stay %>%
-    select(Attrition_Flag, Income_Category) %>%
-    ggplot(aes(x=Attrition_Flag,fill=Income_Category)) +
-    geom_bar(position="dodge2") +
-    geom_text(aes(y = (..count..)/sum(..count..),
-                  label = paste0(round(prop.table(..count..) * 100,2), '%')),
-              stat = 'count',
-              size = 3,
-              vjust=-4,
-              position = position_dodge(.9))+
-    labs(title="Distribution par rentrée financière",
-         x="Existing custumers",y="NB")
-
-#####Les resultats  
 # => les proportions les plus notables  :
 #   - sont chez les plus bas revenus (- 40 K$):  3 % de différence dans la proportion de desabonnés parmi les desabonnés.
 # - les revenus moyens ("40-80 K$") :  on observe une différence de 1.2 % et 2.7 % des abonnés parmi l'ensemble des abonnés
 
 
-#### Education_Level ----
-#####frequences des modalités en fonction de l'Attrition_Flag 
-#  les modalités
+# Education_Level ----
 # unique (Education_Level)
 # College Doctorate Graduate High School Post-Graduate Uneducated Unknown
 
-# Dans l'ordre du niveau d'etude
-    # Unknown
-    # Uneducated
-    # High School
-    # College
-    # Graduate
-    # Post-Graduate
-    # Doctorate
+# Unknown
+# Uneducated
+# High School
+# College
+# Graduate
+# Post-Graduate
+# Doctorate
 
-#  tableau de contingences
 frequence_Education_Level <-
     data.frame(table(Attrition_Flag, Education_Level))
 
-#  les vecteurs pour les ratios par modalités
 
 ratio_College <- c("0", "1")
 ratio_Doctorate <- c("0", "1")
@@ -733,49 +559,276 @@ ratio_Unknown[2] <-
 # > ratio_Unknown
 # "0.149" "0.157" (+0.8) légere différence de ratio parmi les "Unknown", un peu plus de desabonnés
 
-
-
-
-
-##### Plot attrition par niveau d'education ----
-
-# pour les desabonnements(Attrited Customers )
-par(mfrow=c(1,2))
-data_quit %>%
-        select(Attrition_Flag, Education_Level) %>%
-        ggplot(aes(x=Attrition_Flag,fill=Education_Level)) +
-        geom_bar(position="dodge2") +
-        geom_text(aes(y = (..count..)/sum(..count..),
-                      label = paste0(round(prop.table(..count..) * 100,1), '%')),
-                  stat = 'count',
-                  size = 3,
-                  vjust=-4,
-                  position = position_dodge(.9))+
-        labs(title="Distribution par niveau d'étude",
-             x="Attrited Customers",y="NB")
-
-#  pour les clients 
-data_stay %>%
-        select(Attrition_Flag, Education_Level) %>%
-        ggplot(aes(x=Attrition_Flag,fill=Education_Level)) +
-        geom_bar(position="dodge2") +
-        geom_text(aes(y = (..count..)/sum(..count..),
-                      label = paste0(round(prop.table(..count..) * 100,1), '%')),
-                  stat = 'count',
-                  size = 3,
-                  vjust=-4,
-                  position = position_dodge(.9))+
-        labs(title="Distribution par niveau d'étude",
-             x="Existing Custumers",y="NB")
-
-#####Les resultats 
 #  en fonction du niveau d'etude on voit une legere différence de proportion parmi les abonnées ou les desabonnés.
 # Il semble que le niveau d'etude relativement élevé (graduate, post graduate et doctorate) facilite de depart de la banque.
 # parmi les " unknox on trouve une tres legere surrepresentation des desabonnés
 
+# --- les histogrammes des varibles qualitatives en fonction Attrition_Flag
 
-### 3.3 VARIABLES QUANTITATIVES ----
 
+boxplot(data$Attrition_Flag ~ data$Gender)
+# ### sur le dataset complet (data)
+# categ <- data %>%
+#     select(Attrition_Flag,Gender, Marital_Status, Card_Category, Income_Category, Education_Level)
+#
+# # Plot attrition par genre
+#
+# categ %>%
+#     select(Attrition_Flag, Gender) %>%
+#     mutate(Gender = ifelse(Gender == "F","Female","Male"))%>%
+#     ggplot(aes(x=Attrition_Flag,fill=Gender)) +
+#     geom_bar(position="dodge2") +
+#     geom_text(aes(y = (..count..)/sum(..count..),
+#                   label = paste0(round(prop.table(..count..) * 100), '%')),
+#               stat = 'count',
+#               size = 3,
+#               vjust=-4,
+#               position = position_dodge(.9))+
+#     labs(title="Distribution par genre",
+#          x="Attrition_Flag",y="NB")
+#
+#
+# # Plot par Statut marital
+# categ %>%
+#     select(Attrition_Flag, Marital_Status) %>%
+#     ggplot(aes(x=Attrition_Flag,fill=Marital_Status)) +
+#     geom_bar(position="dodge2") +
+#     geom_text(aes(y = (..count..)/sum(..count..),
+#                   label = paste0(round(prop.table(..count..) * 100), '%')),
+#               stat = 'count',
+#               size = 3,
+#               vjust=-4,
+#               position = position_dodge(.9))+
+#     labs(title="Distribution par statut marital",
+#          x="Attrition_Flag",y="NB")
+#
+# # Plot par carte bancaire
+# categ %>%
+#     select(Attrition_Flag, Card_Category) %>%
+#     ggplot(aes(x=Attrition_Flag,fill=Card_Category))+
+#     geom_bar(position="dodge2") +
+#     geom_text(aes(y = (..count..)/sum(..count..),
+#                   label = paste0(round(prop.table(..count..) * 100,2), '%')),
+#               stat = 'count',
+#               size = 3,
+#               vjust=-4,
+#               position = position_dodge(.9))+
+#     labs(title="Distribution par type de CB",
+#          x="Attrition_Flag", y="NB")
+#
+# # Plot par rentrée financiere
+# categ %>%
+#     select(Attrition_Flag, Income_Category) %>%
+#     ggplot(aes(x=Attrition_Flag,fill=Income_Category)) +
+#     geom_bar(position="dodge2") +
+#     geom_text(aes(y = (..count..)/sum(..count..),
+#                   label = paste0(round(prop.table(..count..) * 100,2), '%')),
+#               stat = 'count',
+#               size = 3,
+#               vjust=-4,
+#               position = position_dodge(.9))+
+#     labs(title="Distribution par rentrée financière",
+#          x="Attrition_Flag",y="NB")
+#
+# # Plot par niveau d'étude
+# categ %>%
+#     select(Attrition_Flag, Education_Level) %>%
+#     ggplot(aes(x=Attrition_Flag,fill=Education_Level)) +
+#     geom_bar(position="dodge2") +
+#     geom_text(aes(y = (..count..)/sum(..count..),
+#                   label = paste0(round(prop.table(..count..) * 100,1), '%')),
+#               stat = 'count',
+#               size = 3,
+#               vjust=-4,
+#               position = position_dodge(.9))+
+#     labs(title="Distribution par niveau d'étude",
+#          x="Attrition_Flag",y="NB")
+
+
+###  les personnes qui ont resiliées (data_quit)
+
+# Analyse de chaque variable de manière séparée
+
+
+# Plot par Statut marital
+categ %>%
+    select(Attrition_Flag, Marital_Status) %>%
+    ggplot(aes(x = Attrition_Flag, fill = Marital_Status)) +
+    geom_bar(position = "dodge2") +
+    geom_text(
+        aes(
+            y = (..count..) / sum(..count..),
+            label = paste0(round(prop.table(..count..) * 100), '%')
+        ),
+        stat = 'count',
+        size = 3,
+        vjust = -4,
+        position = position_dodge(.9)
+    ) +
+    labs(title = "Distribution par statut marital",
+         x = "Attrition_Flag", y = "NB")
+
+# Plot par carte bancaire
+categ %>%
+    select(Attrition_Flag, Card_Category) %>%
+    ggplot(aes(x = Attrition_Flag, fill = Card_Category)) +
+    geom_bar(position = "dodge2") +
+    geom_text(
+        aes(
+            y = (..count..) / sum(..count..),
+            label = paste0(round(prop.table(..count..) * 100, 2), '%')
+        ),
+        stat = 'count',
+        size = 3,
+        vjust = -4,
+        position = position_dodge(.9)
+    ) +
+    labs(title = "Distribution par type de CB",
+         x = "Attrition_Flag", y = "NB")
+
+# Plot par rentrée financiere
+categ %>%
+    select(Attrition_Flag, Income_Category) %>%
+    ggplot(aes(x = Attrition_Flag, fill = Income_Category)) +
+    geom_bar(position = "dodge2") +
+    geom_text(
+        aes(
+            y = (..count..) / sum(..count..),
+            label = paste0(round(prop.table(..count..) * 100, 2), '%')
+        ),
+        stat = 'count',
+        size = 3,
+        vjust = -4,
+        position = position_dodge(.9)
+    ) +
+    labs(title = "Distribution par rentrée financière",
+         x = "Attrition_Flag", y = "NB")
+
+# Plot par niveau d'étude
+categ %>%
+    select(Attrition_Flag, Education_Level) %>%
+    ggplot(aes(x = Attrition_Flag, fill = Education_Level)) +
+    geom_bar(position = "dodge2") +
+    geom_text(
+        aes(
+            y = (..count..) / sum(..count..),
+            label = paste0(round(prop.table(..count..) * 100, 2), '%')
+        ),
+        stat = 'count',
+        size = 3,
+        vjust = -4,
+        position = position_dodge(.9)
+    ) +
+    labs(title = "Distribution par niveau d'étude",
+         x = "Attrition_Flag", y = "NB")
+
+### Les clients qui restent (data_stay)
+##################################################################################
+
+# Analyse de chaque variable de manière séparée
+categ <- data_stay %>%
+    select(
+        Attrition_Flag,
+        Gender,
+        Marital_Status,
+        Card_Category,
+        Income_Category,
+        Education_Level
+    )
+
+# Plot attrition par genre
+categ %>%
+    select(Attrition_Flag, Gender) %>%
+    mutate(Gender = ifelse(Gender == "F", "Female", "Male")) %>%
+    ggplot(aes(x = Attrition_Flag, fill = Gender)) +
+    geom_bar(position = "dodge2") +
+    geom_text(
+        aes(
+            y = (..count..) / sum(..count..),
+            label = paste0(round(prop.table(..count..) * 100), '%')
+        ),
+        stat = 'count',
+        size = 3,
+        vjust = -4,
+        position = position_dodge(.9)
+    ) +
+    labs(title = "Distribution par genre",
+         x = "Attrition_Flag", y = "NB")
+
+# Plot par Statut marital
+categ %>%
+    select(Attrition_Flag, Marital_Status) %>%
+    ggplot(aes(x = Attrition_Flag, fill = Marital_Status)) +
+    geom_bar(position = "dodge2") +
+    geom_text(
+        aes(
+            y = (..count..) / sum(..count..),
+            label = paste0(round(prop.table(..count..) * 100), '%')
+        ),
+        stat = 'count',
+        size = 3,
+        vjust = -4,
+        position = position_dodge(.9)
+    ) +
+    labs(title = "Distribution par statut marital",
+         x = "Attrition_Flag", y = "NB")
+
+# Plot par carte bancaire
+categ %>%
+    select(Attrition_Flag, Card_Category) %>%
+    ggplot(aes(x = Attrition_Flag, fill = Card_Category)) +
+    geom_bar(position = "dodge2") +
+    geom_text(
+        aes(
+            y = (..count..) / sum(..count..),
+            label = paste0(round(prop.table(..count..) * 100, 2), '%')
+        ),
+        stat = 'count',
+        size = 3,
+        vjust = -4,
+        position = position_dodge(.9)
+    ) +
+    labs(title = "Distribution par type de CB",
+         x = "Attrition_Flag", y = "NB")
+
+# Plot par rentrée financiere
+categ %>%
+    select(Attrition_Flag, Income_Category) %>%
+    ggplot(aes(x = Attrition_Flag, fill = Income_Category)) +
+    geom_bar(position = "dodge2") +
+    geom_text(
+        aes(
+            y = (..count..) / sum(..count..),
+            label = paste0(round(prop.table(..count..) * 100, 2), '%')
+        ),
+        stat = 'count',
+        size = 3,
+        vjust = -4,
+        position = position_dodge(.9)
+    ) +
+    labs(title = "Distribution par rentrée financière",
+         x = "Attrition_Flag", y = "NB")
+
+# Plot par niveau d'étude
+categ %>%
+    select(Attrition_Flag, Education_Level) %>%
+    ggplot(aes(x = Attrition_Flag, fill = Education_Level)) +
+    geom_bar(position = "dodge2") +
+    geom_text(
+        aes(
+            y = (..count..) / sum(..count..),
+            label = paste0(round(prop.table(..count..) * 100, 2), '%')
+        ),
+        stat = 'count',
+        size = 3,
+        vjust = -4,
+        position = position_dodge(.9)
+    ) +
+    labs(title = "Distribution par niveau d'étude",
+         x = "Attrition_Flag", y = "NB")
+
+# VARIABLES QUANTITATIVES
+########################
 
 # ???? TEST DE STUDENT ????
 # pour comparer des groupes dont les effectifs sont différentS : comparaison de moyenne
@@ -788,27 +841,6 @@ data_stay %>%
 
 
 #--- les 14 variables quantitatives
-
-#  regarder le distribution
-#  faire un graphique en fonctio de L'Attrition_Flag
-# regarder les variances 65.3
-
-hist(data_stay$Customer_Age)
-summary(data_stay$Customer_Age)
-var(data_stay$Customer_Age)
-
-hist(data_quit$Customer_Age)
-summary(data_quit$Customer_Age)
-var(data_quit$Customer_Age)
-
-boxplot(Customer_Age ~ Attrition_Flag)
-
-t.test(data_stay$Customer_Age~data_quit$Customer_Age,var.equal=TRUE)
-
-# 58.76221
-summary(aov(data_quit$Customer_Age~data_stay$Customer_Age))
-# loi de student (loi normales)
-
 # 1- Months_on_book          : int
 hist(Months_on_book)
 boxplot(Months_on_book ~ Attrition_Flag)
@@ -873,21 +905,13 @@ pTotal_Trans_Ct
 
 pContacts_Count_12_mon <-
     data %>% ggplot(aes(x = Contacts_Count_12_mon, fill = Attrition_Flag)) +
-    geom_density(alpha = 0.1) +
-    scale_fill_manual(values = c('#3C3338', '#338076'), name = '') +
+    geom_density(alpha = 0.7) +
+    scale_fill_manual(values = c('#3C3838', '#338076'), name = '') +
     theme_classic() +
     labs(title = 'Total Transaction Count (Last 12 months) by flag') +
     theme(legend.position = 'bottom')
 pContacts_Count_12_mon
 
-pCustumer_Age <-
-    data %>% ggplot(aes(x = Customer_Age, fill = Attrition_Flag)) +
-    geom_density(alpha = 0.7) +
-    scale_fill_manual(values = c('#3C3838', '#338076'), name = '') +
-    theme_classic() +
-    labs(title = 'Customer_Age by flag') +
-    theme(legend.position = 'bottom')
-pCustumer_Age
 
 
 
