@@ -10,7 +10,7 @@
 # ```{r}
 # data.frame amélioré
 if ("data.table" %in% rownames(installed.packages()) == FALSE) {
-    install.packages("data.table")
+install.packages("data.table")
 }
 library(data.table)
 # gestion des dates
@@ -81,6 +81,25 @@ library(highcharter)
 
 # Tools for reordering and modifying factor levels  with Categorical Variables (Factors)
 if("forcats" %in% rownames(installed.packages()) == FALSE) {install.packages("forcats")};library(forcats)
+# 
+if("skimr" %in% rownames(installed.packages()) == FALSE) {install.packages("skimr")};library(skimr)
+# stats
+
+# créer des graphiques prêts à être publiés
+if("ggpubr" %in% rownames(installed.packages()) == FALSE) {install.packages("ggpubr")};library(ggpubr)
+# Extraire et visualiser les résultats d’analyses de données multivariées
+if("factoextra" %in% rownames(installed.packages()) == FALSE) {install.packages("factoextra")};library(factoextra)
+# Surrogate Residuals for Ordinal and General Regression Models
+
+if("sure" %in% rownames(installed.packages()) == FALSE) {install.packages("sure")};library(sure)
+
+
+# Fonctions diverses pour les graphiques "Grid"(grilles)
+if("gridExtra" %in% rownames(installed.packages()) == FALSE) {install.packages("gridExtra")};library(gridExtra)
+
+
+
+
 
 # CONFLIT : confilt de select() entre les deux librairies
 require(MASS)
@@ -90,7 +109,7 @@ require(dplyr)
 # pour ajouter une nouvelle librairie
 # if("" %in% rownames(installed.packages()) == FALSE) {install.packages("")};library()
 
-
+# Error in names(frame) <- `*vtmp*` : names() applied to a non-vector
 
 # les librairies installées
 # library()
@@ -122,10 +141,10 @@ length(unique(data$CLIENTNUM))
 #   - Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_2
 data <- data[, -c(1, 22, 23)]
 
-
 # ---la variable a expliquer :Attrition_Flag ( Factor ) => regression logistique
 
-
+summary(data)
+skim(data)
 # ---les  variables qualitatives
 # 1 Card_Category           : Factor
 # 3 Gender                  : Factor
@@ -149,7 +168,7 @@ data <- data[, -c(1, 22, 23)]
 # 13- Customer_Age            : int
 # 14- Dependent_count         : int
 
-summary(data)
+
 
 # 20 colonnes restantes
 length (colnames(data))
@@ -163,16 +182,10 @@ length (colnames(data))
 
 # modification Attrition_Flag : 0 Existing Customer, 1 Attrited Customer ---
 
-
 data$Attrition_Flag<-as.character(data$Attrition_Flag)
 data$Attrition_Flag[data$Attrition_Flag=="Existing Customer"]<-0
 data$Attrition_Flag[data$Attrition_Flag=="Attrited Customer"]<-1
 data$Attrition_Flag <- as_factor(data$Attrition_Flag)
-
-# data <-data %>% mutate(Attrition_Flag = recode(Attrition_Flag, "Attrited Customer" = 1,"Existing Customer" = 0))
-# data$Attrition_Flag <- as_factor(data$Attrition_Flag)
-# str(data$Attrition_Flag )
-
 
 #### les deux datasets
 data_quit <- data[(data$Attrition_Flag) == 1, ] # 1627
@@ -180,18 +193,18 @@ data_stay <- data[(data$Attrition_Flag) == 0, ] # 8500
 str(data_quit)
 
 #### Conversion des facteurs et réordonnancement des niveaux 
-# data$Attrition_Flag <- as_factor(data$Attrition_Flag)
-# data$Gender <- as_factor(data$Gender)
-# data$Education_Level <- as_factor(data$Education_Level)
-# data$Education_Level <- fct_relevel(data$Education_Level, "Unknown", "Uneducated", "High School", "College", "Graduate", "Post-Graduate", "Doctorate")
-# data$Marital_Status <- as_factor(data$Marital_Status)
-# data$Marital_Status <- fct_relevel(data$Marital_Status, "Unknown", "Single", "Married", "Divorced")
-# data$Income_Category <- as_factor(data$Income_Category)
-# data$Income_Category <- fct_relevel(data$Income_Category, "Unknown", "Less than $40K", "$40K - $60K", "$60K - $80K", "$80K - $120K", "$120K +")
-# data$Card_Category <- as_factor(data$Card_Category)
-# data$Card_Category <- fct_relevel(data$Card_Category, "Blue", "Silver", "Gold", "Platinum")
+data$Attrition_Flag <- as_factor(data$Attrition_Flag)
+data$Gender <- as_factor(data$Gender)
+data$Education_Level <- as_factor(data$Education_Level)
+data$Education_Level <- fct_relevel(data$Education_Level, "Unknown", "Uneducated", "High School", "College", "Graduate", "Post-Graduate", "Doctorate")
+data$Marital_Status <- as_factor(data$Marital_Status)
+data$Marital_Status <- fct_relevel(data$Marital_Status, "Unknown", "Single", "Married", "Divorced")
+data$Income_Category <- as_factor(data$Income_Category)
+data$Income_Category <- fct_relevel(data$Income_Category, "Unknown", "Less than $40K", "$40K - $60K", "$60K - $80K", "$80K - $120K", "$120K +")
+data$Card_Category <- as_factor(data$Card_Category)
+data$Card_Category <- fct_relevel(data$Card_Category, "Blue", "Silver", "Gold", "Platinum")
 
-# str(data)
+str(data)
 
 ### Analyses des variables qualitatives ### ----
 
@@ -205,8 +218,10 @@ attach(data)
 unique (Gender)
 
 #  tableau de contingences
-frequence_Gender <- data.frame(table(Gender, Attrition_Flag))
+frequence_Gender <-
+    data.frame(table(Attrition_Flag, Gender))
 
+# les vecteurs contenant les proportions selon l'AttrictionFlag
 ratio_F <- c("0", "1")
 ratio_F[1] <-
     round((frequence_Gender$Freq[frequence_Gender$Gender == "F" &
@@ -225,7 +240,7 @@ require(MASS)
 require(dplyr)
 # mtcars %>%
 #     dplyr::select(mpg)
-par(mfrow=c(1,2))
+
 data_quit %>%
     dplyr::select(Attrition_Flag, Gender) %>%
     mutate (Gender = ifelse(Gender == "F", "Female", "Male")) %>%
@@ -281,10 +296,10 @@ frequence_Marital_Status <-
     data.frame(table(Attrition_Flag, Marital_Status))
 
 # les vecteurs pour les ratio par modalités
-# ratio_Divorced<- c("0","1")
-# ratio_Unknown<- c("0","1")
-# ratio_Single<- c("0","1")
-# ratio_Married <- c("0","1")
+ratio_Divorced<- c("0","1")
+ratio_Unknown<- c("0","1")
+ratio_Single<- c("0","1")
+ratio_Married <- c("0","1")
 
 ratio_Married[1] <-
     round((frequence_Marital_Status$Freq[frequence_Marital_Status$Marital_Status ==
@@ -297,6 +312,7 @@ ratio_Married[2] <-
                                              frequence_Marital_Status$Attrition_Flag == "1"]) / (sum(frequence_Marital_Status$Freq[frequence_Marital_Status$Attrition_Flag ==
                                                                                                                                        "1"])), 3)
 # > ratio_Married
+
 # "0.468" "0.436" 
 
 ratio_Single[1] <-
@@ -607,6 +623,8 @@ ratio_un[2] <-
 
 ##### Plot attrition par classe de revenus ----
 
+data %>% ggplot(aes(x=income_category, y=pct, color= attrition_flag))
+
 # pour les desabonnements(Attrited Customers )
 data_quit %>%
     dplyr::select(Attrition_Flag, Income_Category) %>%
@@ -801,9 +819,10 @@ data_stay %>%
 # Il semble que le niveau d'etude relativement élevé (graduate, post graduate et doctorate) facilite de depart de la banque.
 # parmi les " unknox on trouve une tres legere surrepresentation des desabonnés
 
-
+# ---------------------------------------------------
 ### 3.3 VARIABLES QUANTITATIVES ----
 
+#  14 varibles quanti
 
 # ???? TEST DE STUDENT ????
 # pour comparer des groupes dont les effectifs sont différentS : comparaison de moyenne
@@ -815,29 +834,51 @@ data_stay %>%
 # ??????????????????????????????????????????????????????????????????????????????????
 
 
-#--- les 14 variables quantitatives
 
-#  regarder le distribution
-#  faire un graphique en fonctio de L'Attrition_Flag
-# regarder les variances 65.3
+## Analyses visuelles 
 
+#### Customer_Age #### 
+
+#  histogramme
 hist(data_stay$Customer_Age)
-summary(data_stay$Customer_Age)
-var(data_stay$Customer_Age)
-
 hist(data_quit$Customer_Age)
+
+# stat descriptives
+summary(data_stay$Customer_Age)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 26.00   41.00   46.00   46.26   52.00   73.00 
 summary(data_quit$Customer_Age)
-var(data_quit$Customer_Age)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 26.00   41.00   47.00   46.66   52.00   68.00 
 
+#  variances
+var(data_stay$Customer_Age)
+# 65.30509
+# var(data_quit$Customer_Age)
+# 58.76221
+
+#  Customer_Age selon l' Attrition_Flag
 boxplot(Customer_Age ~ Attrition_Flag)
+plot_Custumer_Age <-
+    data %>% ggplot(aes(x = Customer_Age, fill = Attrition_Flag)) +
+    geom_density(alpha = 0.7) +
+    scale_fill_manual(values = c('#3C3838', '#338076'), name = '') +
+    theme_classic() +
+    labs(title = 'Customer_Age by flag') +
+    theme(legend.position = 'bottom')
+plot_Custumer_Age
 
+# test de normalité 
+# les histogramme montre une distribution qui suit la loi normale
+
+#  test d'egalités des variances
+summary(aov(data_quit$Customer_Age~data_stay$Customer_Age))
+
+#  test de student
 t.test(data_stay$Customer_Age~data_quit$Customer_Age,var.equal=TRUE)
 
-# 58.76221
-summary(aov(data_quit$Customer_Age~data_stay$Customer_Age))
-# loi de student (loi normales)
 
-# 1- Months_on_book          : int
+####   Months_on_book #### 
 hist(Months_on_book)
 boxplot(Months_on_book ~ Attrition_Flag)
 
@@ -845,105 +886,70 @@ boxplot(Months_on_book ~ Attrition_Flag)
 barplot(table(data$Months_on_book[data$Attrition_Flag == 0]))
 barplot(table(data$Months_on_book[data$Attrition_Flag == 1]))
 
-# 2- Total_Relationship_Count: int
+#### Total_Relationship_Count #### 
 hist(Months_on_book)
 barplot(Contacts_Count_12_mon)
 boxplot(Months_on_book ~ Attrition_Flag)
-# 3- Months_Inactive_12_mon  : int
+####  Months_Inactive_12_mon #### 
 
 
 
-# 4- Contacts_Count_12_mon   : int
+####  Contacts_Count_12_mon#### 
 hist(Contacts_Count_12_mon)
 boxplot(Contacts_Count_12_mon ~ Attrition_Flag)
 
-# 5- Credit_Limit            : num
-hist(Credit_Limit)
-boxplot(Credit_Limit ~ Attrition_Flag)
-# 6- Total_Revolving_Bal     : int
-hist(Total_Revolving_Bal)
-boxplot(Total_Revolving_Bal ~ Attrition_Flag)
-# 7- Avg_Open_To_Buy         : num
-hist(Avg_Open_To_Buy)
-boxplot(Avg_Open_To_Buy ~ Attrition_Flag)
-# 8- Total_Amt_Chng_Q4_Q1    : num
-hist(Total_Amt_Chng_Q4_Q1)
-boxplot(Total_Amt_Chng_Q4_Q1 ~ Attrition_Flag)
-# 9- Total_Trans_Amt         : int
-hist(Total_Trans_Ct)
-boxplot(Total_Trans_Ct ~ Attrition_Flag)
-# 10- Total_Trans_Ct          : int
-hist(Total_Trans_Ct)
-boxplotTotal_Trans_Ct( ~ Attrition_Flag)
-# 11- Total_Ct_Chng_Q4_Q1     : num
-hist(Total_Ct_Chng_Q4_Q1)
-boxplot(Total_Ct_Chng_Q4_Q1 ~ Attrition_Flag)
-# 12- Avg_Utilization_Ratio   : num
-hist(Avg_Utilization_Ratio)
-boxplot(Avg_Utilization_Ratio ~ Attrition_Flag)
-# 13- Customer_Age            : int
-hist(Customer_Age)
-boxplot(Customer_Age ~ Attrition_Flag)
-# 14- Dependent_count         : int
-hist(Dependent_count)
-boxplot(Dependent_count ~ Attrition_Flag)
-
-# ---- les graphiques
-# Transaction Count
-pTotal_Trans_Ct <-
-    data %>% ggplot(aes(x = Total_Trans_Ct, fill = Attrition_Flag)) +
-    geom_density(alpha = 0.7) +
-    scale_fill_manual(values = c('#3C3838', '#338076'), name = '') +
-    theme_classic() +
-    labs(title = 'Total Transaction Count (Last 12 months) by flag') +
-    theme(legend.position = 'bottom')
-pTotal_Trans_Ct
-
-pContacts_Count_12_mon <-
+plot_Contacts_Count_12_mon <-
     data %>% ggplot(aes(x = Contacts_Count_12_mon, fill = Attrition_Flag)) +
     geom_density(alpha = 0.1) +
     scale_fill_manual(values = c('#3C3338', '#338076'), name = '') +
     theme_classic() +
     labs(title = 'Total Transaction Count (Last 12 months) by flag') +
     theme(legend.position = 'bottom')
-pContacts_Count_12_mon
+plot_Contacts_Count_12_mon
+#### Credit_Limit #### 
+hist(Credit_Limit)
+boxplot(Credit_Limit ~ Attrition_Flag)
+####  Total_Revolving_Bal #### 
+hist(Total_Revolving_Bal)
+boxplot(Total_Revolving_Bal ~ Attrition_Flag)
+#### Avg_Open_To_Buy #### 
+hist(Avg_Open_To_Buy)
+boxplot(Avg_Open_To_Buy ~ Attrition_Flag)
+#### Total_Amt_Chng_Q4_Q1 #### 
+hist(Total_Amt_Chng_Q4_Q1)
+boxplot(Total_Amt_Chng_Q4_Q1 ~ Attrition_Flag)
+#### Total_Trans_Amt #### 
+hist(Total_Trans_Ct)
+boxplot(Total_Trans_Ct ~ Attrition_Flag)
+#### Total_Trans_Ct #### 
 
-pCustumer_Age <-
-    data %>% ggplot(aes(x = Customer_Age, fill = Attrition_Flag)) +
+hist(Total_Trans_Ct)
+boxplotTotal_Trans_Ct( ~ Attrition_Flag)
+
+plot_Total_Trans_Ct <-
+    data %>% ggplot(aes(x = Total_Trans_Ct, fill = Attrition_Flag)) +
     geom_density(alpha = 0.7) +
     scale_fill_manual(values = c('#3C3838', '#338076'), name = '') +
     theme_classic() +
-    labs(title = 'Customer_Age by flag') +
+    labs(title = 'Total Transaction Count (Last 12 months) by flag') +
     theme(legend.position = 'bottom')
-pCustumer_Age
+plot_Total_Trans_Ct
+#### Total_Ct_Chng_Q4_Q1 #### 
+hist(Total_Ct_Chng_Q4_Q1)
+boxplot(Total_Ct_Chng_Q4_Q1 ~ Attrition_Flag)
+#### Avg_Utilization_Ratio #### 
+hist(Avg_Utilization_Ratio)
+boxplot(Avg_Utilization_Ratio ~ Attrition_Flag)
+
+####  Dependent_count  #### 
+hist(Dependent_count)
+boxplot(Dependent_count ~ Attrition_Flag)
 
 
 
 
 
-
-#partage du dataset en 70/30 
-
-intrain<-createDataPartition(data$Attrition_Flag,p=0.7,
-                             list = F,
-                             times = 1)
-# creation des datasets: testing (30%) & training (70%) pour minimiser le ridque de surentraienemnt 
-training <-data[intrain,]
-testing <-data[-intrain,]
-
-# ---- modification des classes lorsqu'il y a des trop fort desequilibres
-
-
-# #CLASSE
-# data_select<-data
-# #classe_marital_class
-# data_select[which(data_select$Marital_Status %in% c("Divorced","Single")),"Marital_Status"]<-"Single"
-# #Card_category_class
-# data_select[which(data_select$Card_Category %in% c("Gold","platinum","Silver")),"Card_Category"]<-"Others"
-# #Income_category_class
-# data_select[which(data_select$Income_Category %in% c("Less than $40K","$40K - $60K")),"Income_Category"]<-"Less than $60K"
-# data_select[which(data_select$Income_Category %in% c("$60K - $80K","$80K - $120K","$120K +")),"Income_Category"]<-"More than $60K"
-
+### 3.4 CORRELATION ENTRE VARIABLE ----
 
 
 # Graphique I des corrélations entre chacune des variables
@@ -958,7 +964,7 @@ cor_spearman <-
 
 # Visualizing with a heatmap the correlation matrix with the pearson method
 as.matrix(data.frame(cor_spearman)) %>%
-    round(3) %>% #round
+    round(3) %>% 
     hchart() %>%
     hc_add_theme(hc_theme_smpl()) %>%
     hc_title(text = "Spearman's correlation coefficients", align = "center") %>%
@@ -967,9 +973,93 @@ as.matrix(data.frame(cor_spearman)) %>%
     hc_plotOptions(series = list(boderWidth = 0,
                                  dataLabels = list(enabled = TRUE)))
 
+#  Visualisation des 3 plus fortes corrélations ressortant de la matrice de corrélation :
+# Custumer age and months of book are highly correlated (0.79)
+ggplot(data, aes(x=Customer_Age, y=Months_on_book)) + geom_point(color = "black",size= 0.3) + theme_classic() + ggtitle("Months on book vs Customer Age")
+# Total Transaction Count and Total Transaction Amount are highly correlated (0.81)
+ggplot(data, aes(x=Total_Trans_Amt, y= Total_Trans_Ct)) + geom_point(color = "red",size = 0.3) + theme_classic() + ggtitle("Total Trans Amt vs Total Trans Ct")
+# Total Revovlving Balance and Average Utilization Ratio are correlated (0.62)
+ggplot(data, aes(x=Total_Revolving_Bal, y= Avg_Utilization_Ratio)) + geom_point(color = "blue",size= 0.3) + theme_classic() + ggtitle("Total Revolving Bal vs Avg Utilization Ratio")
+
 
 #----Faire des clusters (Kmeans /clusters de clients sui partent vs qui restent)
 # https://www.datanovia.com/en/fr/blog/visualisation-du-clustering-k-means-dans-r-guide-etape-par-etape/
+
+
+
+
+# PCA KMEANS  trouvé sur Kaggle => en doc "who'sgonna churn?"
+# => pb de library pour les fonction (tableGrob et "get_eigenvalue")
+data_k <- data %>% mutate_if(is.factor,as.numeric)
+# seed
+set.seed(2)
+# CLUSTERING USING KMEANS
+res.km <- kmeans(scale(data_k[, -1]), 6, nstart = 25)
+# DIMENSION REDUCTION USING PCA
+res.pca <- prcomp(data_k[, -1],  scale = TRUE)
+
+# Coordinates
+ind.coord <- as.data.frame(get_pca_ind(res.pca)$coord)
+
+# Add clusters obtained using the K-means algorithm
+ind.coord$cluster <- factor(res.km$cluster)
+
+# Add target from original dataset
+ind.coord$target <- data$Attrition_Flag
+pca_cluster <- ind.coord %>% group_by(target,cluster) %>% count() %>% as.data.frame()
+percentage_total= pca_cluster %>% group_by(target) %>% summarise(per_tot=n/sum(n)*100)
+pca_cluster <- cbind(pca_cluster,'%'=round(percentage_total$per_tot,1))
+c2 <- table(pca_cluster)
+View(c2)
+
+
+# Percentage of variance explained by dimensions
+eigenvalue <- round(get_eigenvalue(res.pca), 1)
+
+# factoextra : Extract and Visualize the Results of Multivariate Data Analyses
+variance.percent <- eigenvalue$variance.percent
+
+c3 <- ggscatter(
+    ind.coord, x = "Dim.1", y = "Dim.2",
+    color = "cluster", palette = "npg", ellipse = TRUE, ellipse.type = "convex",
+    size = 1.5,  legend = "right", ggtheme = theme_bw(),
+    xlab = paste0("Dim 1 (", variance.percent[1], "% )" ),
+    ylab = paste0("Dim 2 (", variance.percent[2], "% )" )
+) +
+    stat_mean(aes(color = cluster), size = 4) +
+    theme_classic() +
+    theme(legend.position='top')
+
+
+grid.arrange(c2,c3,ncol=2,
+             top=textGrob("Kmeans cluster and PCA",
+                          gp=gpar(fontsize=18,font=1)))
+
+
+
+
+
+
+
+
+
+
+
+# THe 5 top features of determing a customer's attrition:
+
+# Total Transaction Count
+# Total Revolving Balance
+# Total Transaction Amount
+# Total Relationship Count
+# Total Count Change
+
+
+
+
+
+
+
+
 
 #----faire une AFC
 # http://www.sthda.com/french/articles/38-methodes-des-composantes-principales-dans-r-guide-pratique/74-afc-analyse-factorielle-des-correspondances-avec-r-l-essentiel/
@@ -991,6 +1081,36 @@ as.matrix(data.frame(cor_spearman)) %>%
 
 # variable explicatives
 # age, genre, niveau education, statut marital, personnes à charge, revenu, type de carte, période de relation avec la banque...
+
+
+
+
+
+
+
+#partage du dataset en 70/30 
+
+intrain<-createDataPartition(data$Attrition_Flag,p=0.7,
+                             list = F,
+                             times = 1)
+# creation des datasets: testing (30%) & training (70%) pour minimiser le ridque de surentraienemnt 
+training <-data[intrain,]
+testing <-data[-intrain,]
+
+# ---- modification des classes lorsqu'il y a des trop fort desequilibres
+
+
+# # CLASSE => message d'erreur 
+
+# data_select<-data
+# #classe_marital_class
+# data_select[which(data_select$Marital_Status %in% c("Divorced","Single")),"Marital_Status"]<-"Single"
+# #Card_category_class
+# data_select[which(data_select$Card_Category %in% c("Gold","platinum","Silver")),"Card_Category"]<-"Others"
+# #Income_category_class
+# data_select[which(data_select$Income_Category %in% c("Less than $40K","$40K - $60K")),"Income_Category"]<-"Less than $60K"
+# data_select[which(data_select$Income_Category %in% c("$60K - $80K","$80K - $120K","$120K +")),"Income_Category"]<-"More than $60K"
+
 
 
 # model_quali<-glm(Attrition_Flag~Customer_Age, data=data, family= binomial(logit))

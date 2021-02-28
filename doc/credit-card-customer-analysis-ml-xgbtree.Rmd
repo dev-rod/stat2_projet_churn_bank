@@ -1,0 +1,1177 @@
+---
+title: "Credit card customer analysis"
+author: "🗣 Murilo Rocha"
+output:
+  html_document:
+    number_sections: true
+    fig_caption: true
+    toc: true
+    fig_width: 7
+    fig_height: 4.5
+    theme: cosmo
+    highlight: tango
+---
+
+
+---
+
+<center><img src="https://specials-images.forbesimg.com/imageserve/5f1fd679c4049d7bec674c92/960x0.gif?fit=scale"  style="border-radius: 20px;"></center>
+
+---
+
+
+# Project description
+
+## Problem Context
+
+A bank manager is uncomfortable with more and more customers leaving their credit card services. They would really appreciate it if someone could predict who will be affected so that they can proactively go to the customer to provide them with better services and turn customer decisions in the opposite direction.
+
+
+## The goal
+
+This project is carried out in a sequence of steps, the first of which consists of an exploratory analysis, where the objective is to know the behavior of the variables and to analyze attributes that indicate a strong relationship with the cancellation of credit card service customers. After the second part, which consists of applying resource engineering techniques, the third act consists of applying a machine learning algorithm to find the best resources for building the model. At the end of the project, after the completion of all steps, a machine learning model will be developed, capable of predicting, based on the data of a system, whether a customer will leave the credit card service or not.
+
+## Data set
+
+This data set consists of 10,000 customers mentioning their age, salary, status marital, credit card limit, credit card category, etc.
+
+
+We have only <strong>16,07%</strong> of customers who have canceled. Therefore, it is a little difficult to train our model to predict customer turnover.
+
+
+```{r echo=F}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
+
+
+```{r echo=F}
+
+# Instalação de Pacotes
+# install.packages("RandomForest")
+# install.packages("highcharter")
+install.packages("billboarder")
+# install.packages("ggplot2")
+# install.packages("xgboost")
+# install.packages("timetk")
+# install.packages("dplyr")
+# install.packages("caret")
+# install.packages("DMwR")
+# install.packages("MASS")
+# install.packages("ROSE")
+# install.packages("h2o")
+# install.packages("DT")
+
+# Carregando os pacotes instalados
+library(randomForest)
+library(highcharter)
+library(billboarder)
+library(stringr)
+library(ggplot2)
+library(xgboost)
+library(viridis)
+library(timetk)
+library(tidyr)
+library(MASS)
+library(dplyr)
+library(caret)
+library(DMwR)
+library(ROSE)
+library(glue)
+library(pROC)
+library(DT)
+
+```
+
+
+```{r echo=F}
+
+# Loading the dataset
+dados <- read.csv(file = "../input/credit-card-customers/BankChurners.csv", sep = ",", stringsAsFactors = T)
+
+# Removing columns that will not be used during analysis
+dados <- select(dados, -c("CLIENTNUM", "Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_1", "Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_2"))
+dados_cor <- dados
+
+# Replacing the elements of the Attrition_Flag taget variable
+sub_target <- function(x){
+  if(x == "Existing Customer"){
+    return(0)
+  } else {
+    return(1)
+  }
+}
+dados_cor$Attrition_Flag <- sapply(dados_cor$Attrition_Flag, sub_target)
+
+# Replacing the elements of the Attrition_Flag taget variable
+sub_target1 <- function(x){
+  if(x == "Existing.Customer"){
+    return(0)
+  } else {
+    return(1)
+  }
+}
+```
+
+# Exploratory Data Analysis (EDA)
+
+As stated in the ‘Project Description’, this step aims to discover the main elements responsible for the cancellation or non-cancellation of credit card service customers. For this first session to be carried out successfully, I will apply some statistical techniques (Descriptive Analysis) and visualization, which will provide important and satisfactory insights to proceed with the rest of the analysis.
+
+## Correlation Analysis - Spearman
+
+So that this analysis is not too extensive, I will apply the non-parametric statistical test of spearman, thus obtaining the correlation coefficient, which measures statistical dependence between two variables. In this way, we can verify from the beginning which variables should receive the most attention, saving time in analyzing variables that do not have a strong influence on the rate of customers who leave the credit card service.
+
+---
+
+**How to calculate the Spearman correlation coefficient**
+
+<img src="https://www.questionpro.com/blog/wp-content/uploads/2019/05/3.png">
+
+n = number of data points for the two variables
+
+di = difference in reach of the “n” element
+
+---
+
+**Interpretation of Spearman's Correlation Coefficient**
+
+The Spearman coefficient, ⍴, can have a value between +1 and -1 where:
+
++ $\rho = +1$ → It means a perfect classification association.
+
++ $\rho = 0$ →  It means that there is no classification association.
+
++ $\rho = -1$ → It means a perfect negative association between the intervals.
+
+---
+
+```{r echo=F}
+
+# Obtaining the correlation matrix with the Spearman method
+cor_spearman <- cor(dados_cor[, sapply(dados_cor, is.numeric)], method = 'spearman')
+
+# Visualizing with a heatmap the correlation matrix with the pearson method
+as.matrix(data.frame(cor_spearman)) %>% 
+  round(3) %>% #round
+  hchart() %>% 
+  hc_add_theme(hc_theme_smpl()) %>%
+  hc_title(text = "Spearman's correlation coefficients", align = "center") %>% 
+  hc_legend(align = "center") %>% 
+  hc_colorAxis(stops = color_stops(colors = viridis::inferno(10))) %>%
+  hc_plotOptions(
+           series = list(
+             boderWidth = 0,
+             dataLabels = list(enabled = TRUE)))
+
+```
+
+The variables that demonstrate a considerable negative association in relation to the dependent attribute, and that are the target of investigation, are: Total_Trans_Ct, Total_Ct_Chng_Q4_Q1, Total_Revolving_Bal and Avg_Utilization_Ratio. A negative association (<0) indicates that the attribute has a relevant level of significance in the customer's permanence.
+
+With a positive association we have the variables: Contacts_Count_12_mon and Months_inactive_112_mon.
+
+## Number of Cancellations For Each Qualitative Variable Category {.tabset .tabset-fade .tabset-pills}
+
+Before starting to analyze the quantitative variables, I will go through the treemap graphs (visualization technique to represent hierarchical data using nested rectangles), to know the behavior of the categorical variables of the data set. More precisely, I will investigate which categories of qualitative variables have the highest number of credit card cancellations.
+
+---
+
+**With the graphics below we can filter the following information:**
+
++ <strong>46,28%</strong> of credit card cancellations are from married people and <strong>7,38%</strong> are from customers who have marital status as divorced.
+
++ <strong>35.16%</strong> of credit card cancellations are from people with an annual income less than 40K and <strong>7.17%</strong> are from customers who have an annual income greater than or equal to 120K.
+
++ <strong>30.88%</strong> of credit card cancellations are from people who have graduated and the lowest number of cancellations (<strong>4.45%</strong>) are from customers who have post Doctorate.
+
++ <strong>93.17%</strong> of credit card cancellations are from customers who have the Blue card type and the lowest number of cancellations (<strong>0.19%</strong>) are from customers who have the Platinum card type.
+
+---
+
+### Marital status
+
+```{r echo=F}
+
+dados %>%
+  filter(Attrition_Flag == "Attrited Customer") %>%
+  count(Marital_Status) %>%
+  hchart("treemap", hcaes(x = Marital_Status, value = n, color = n)) %>%
+  hc_colorAxis(stops = color_stops(colors = viridis::inferno(10))) %>%
+  hc_title(text = "Number of Cancellations By Marital Status", align = "center")
+
+```
+
+
+### Annual Income
+
+```{r echo=F}
+
+dados %>%
+  filter(Attrition_Flag == "Attrited Customer") %>%
+  count(Income_Category) %>%
+  hchart("treemap", hcaes(x = Income_Category, value = n, color = n)) %>%
+  hc_colorAxis(stops = color_stops(colors = viridis::inferno(10))) %>%
+  hc_title(text = "Number of Cancellations Per Annual Income", align = "center")
+
+```
+
+
+### Educational level
+
+```{r echo=F}
+
+dados %>%
+  filter(Attrition_Flag == "Attrited Customer") %>%
+  count(Education_Level) %>%
+  hchart("treemap", hcaes(x = Education_Level, value = n, color = n)) %>%
+  hc_colorAxis(stops = color_stops(colors = viridis::inferno(10))) %>%
+  hc_title(text = "Number of Cancellations By Educational Level", align = "center")
+
+
+```
+
+
+### Card Type
+
+```{r echo=F}
+
+dados %>%
+  filter(Attrition_Flag == "Attrited Customer") %>%
+  count(Card_Category) %>%
+  hchart("treemap", hcaes(x = Card_Category, value = n, color = n)) %>%
+  hc_colorAxis(stops = color_stops(colors = viridis::inferno(10))) %>%
+  hc_title(text = "Number of Cancellations by Card Type", align = "center")
+
+```
+
+### resume
+
+#### Marital status
+
+```{r echo=F}
+
+tabs <- function(atributo){
+  
+  df <- filter(dados, Attrition_Flag == "Attrited Customer")
+  
+  # Obtaining frequency and relative frequency (%)
+  frequence <- table(df$Card_Category) * 100
+  percent   <- round(prop.table(table(df$Card_Category)) * 100, 2)
+  
+  combine <- cbind(Frequency = frequence, "Relative Frequency" = percent)
+  data.frame(combine)
+}
+
+tabs(Marital_Status)
+```
+
+#### Annual Income
+
+```{r echo=F}
+
+tabs(Income_Category)
+
+```
+
+#### Educational level
+
+```{r echo=F}
+
+tabs(Education_Level)
+
+```
+
+#### Card Category
+
+```{r echo=F}
+
+tabs(Card_Category)
+
+```
+
+
+## Behavior of Total Transactions Made by Customers {.tabset .tabset-fade .tabset-pills}
+
+Proceeding, but now analyzing quantitative variables. As seen in Pearson's statistical test, where the variables 'Total_Trans_Ct' have a correlation coefficient of -0.376, 'Total_Revolving_Bal' with -0.241, 'Avg_Utilization_Ratio' with 0.24 and 'Total_Ct_Chng_Q4_Q1' with -0.312, indicating that they all positively influence customers stay. This session whose name is ‘Behavior of the total customer transaction’ aims to understand the behavior of the quantitative variables listed above in relation to the target variable 'Attrition_Flag', which informs whether the customer has left the card service or not.
+
+---
+
+* Total_Trans_Ct: Total transaction count (last 12 months)
+
+* Total_Revolving_Bal: Total revolving credit card balance
+
+* Avg_Utilization_Ratio: Average card usage fee
+
+* Total_Ct_Chng_Q4_Q1: Change in transaction count (Q4 over Q1)
+
+---
+
+### Total Customer Transactions
+
+```{r echo=F}
+
+dados %>%
+  dplyr::select(Total_Trans_Ct, Attrition_Flag) %>%
+  group_by(Total_Trans_Ct, Attrition_Flag) %>%
+  count(Total_Trans_Ct) %>%
+  arrange() %>%
+  hchart('areaspline', hcaes(x = Total_Trans_Ct, y = n, group = Attrition_Flag)) %>%
+  hc_title(text = "Total transactions (last 12 months)", align = "center") %>%
+  hc_yAxis(labels = list(format = "{value}"), title = list(text = "Frequency")) %>% 
+  hc_xAxis(labels = list(format = "{value}"), title = list(text = "Total Transactions")) %>%
+  hc_colors(c("#8B008B", "#FF4500", "#FC4E07")) %>%
+  hc_add_theme(hc_theme_smpl()) %>% 
+  hc_legend(align = "center") %>%
+  hc_tooltip(formatter = JS("function(){
+                            return (' <br> Frequency: ' + this.y + ' <br> Total Transactions: ' + this.x)}"))
+
+```
+
+### Total revolving credit card balance
+
+```{r echo=F}
+
+dados %>%
+  dplyr::select(Total_Revolving_Bal, Attrition_Flag) %>%
+  group_by(Total_Revolving_Bal, Attrition_Flag) %>%
+  count(Total_Revolving_Bal) %>%
+  arrange() %>%
+  hchart('areaspline', hcaes(x = Total_Revolving_Bal, y = n, group = Attrition_Flag)) %>%
+  hc_title(text = "Total revolving credit card balance", align = "center") %>%
+  hc_yAxis(labels = list(format = "{value}"), title = list(text = "Frequency")) %>% 
+  hc_xAxis(labels = list(format = "{value}"), title = list(text = "Revolving balance")) %>%
+  hc_colors(c("#8B008B", "#FF4500", "#FC4E07")) %>%
+  hc_add_theme(hc_theme_smpl()) %>% 
+  hc_legend(align = "center") %>%
+  hc_tooltip(formatter = JS("function(){
+                            return (' <br> Frequency: ' + this.y + ' <br> Revolving balance: ' + this.x)}"))
+
+```
+
+### Average card usage fee
+
+```{r echo=F}
+
+dados %>%
+  dplyr::select(Avg_Utilization_Ratio, Attrition_Flag) %>%
+  group_by(Avg_Utilization_Ratio, Attrition_Flag) %>%
+  count(Avg_Utilization_Ratio) %>%
+  arrange() %>%
+  hchart('areaspline', hcaes(x = Avg_Utilization_Ratio, y = n, group = Attrition_Flag)) %>%
+  hc_title(text = "Average card usage fee", align = "center") %>%
+  hc_yAxis(labels = list(format = "{value}"), title = list(text = "Frequency")) %>% 
+  hc_xAxis(labels = list(format = "{value}"), title = list(text = "Average card usage fee")) %>%
+  hc_colors(c("#8B008B", "#FF4500", "#FC4E07")) %>%
+  hc_add_theme(hc_theme_smpl()) %>% 
+  hc_legend(align = "center") %>%
+  hc_tooltip(formatter = JS("function(){
+                            return (' <br> Frequency: ' + this.y + ' <br> Average card usage fee: ' + this.x)}"))
+
+```
+
+### Change in transaction count (Q4 over Q1
+
+```{r echo=F}
+
+dados %>%
+  dplyr::select(Total_Ct_Chng_Q4_Q1, Attrition_Flag) %>%
+  group_by(Total_Ct_Chng_Q4_Q1, Attrition_Flag) %>%
+  count(Total_Ct_Chng_Q4_Q1) %>%
+  arrange() %>%
+  hchart('areaspline', hcaes(x = Total_Ct_Chng_Q4_Q1, y = n, group = Attrition_Flag)) %>%
+  hc_title(text = "Change in transaction count (Q4 over Q1)", align = "center") %>%
+  hc_yAxis(labels = list(format = "{value}"), title = list(text = "Frequency")) %>% 
+  hc_xAxis(labels = list(format = "{value}"), title = list(text = "Change in transaction count (Q4 over Q1)")) %>%
+  hc_colors(c("#8B008B", "#FF4500", "#FC4E07")) %>%
+  hc_add_theme(hc_theme_smpl()) %>% 
+  hc_legend(align = "center") %>%
+  hc_tooltip(formatter = JS("function(){
+                            return (' <br> Frequency: ' + this.y + ' <br> Change in transaction count (Q4 over Q1): ' + this.x)}"))
+
+```
+
+## Analysis of Customer Transactions
+
+The Total_Trans_Ct variable, which represents the total number of transactions in the last 12 months, shows an interesting behavior when it is observed its distribution in relation to customers who left and those who did not leave credit card services. To get more information about this variable and how it relates to the other attributes of the data set, in this session I will conduct some investigations.
+
+### total transactions in the last 12 months in terms of percentages
+
+```{r echo=F}
+
+hcboxplot(outliers = TRUE, x = dados$Total_Trans_Ct, var = dados$Attrition_Flag, name = "Length") %>%
+  hc_title(text = "", align = "center") %>%
+  hc_yAxis(title = list(text = "Number of transactions in the last 12 months")) %>%
+  hc_add_theme(hc_theme_smpl()) %>% 
+  hc_legend(align = "center")
+
+```
+
+One way to interpret the separating measures from the boxplot chart above is:
+
++ <strong>50%</strong> of customers who left credit card services had a number of transactions in the last 12 months less than or equal to 43, remembering that the maximum number of transactions in the last 12 months of customers who left the service is 72. While the median of the people who remained with the card services is 71 transactions.
+
++ <strong>75%</strong> of customers who left credit card services had a number of transactions in the last 12 months equal to or less than 51. The third quartile of people who remained with card services is 82 transactions.
+
+### Number of transactions in the (last 12 months) vs Total transaction value (last 12 months)
+
+
+```{r echo=F}
+
+# Separating the data
+set.seed(333)
+intrain      <- createDataPartition(dados$Attrition_Flag, p = 0.7, list = F)
+imbal_train  <- dados[intrain, ]
+
+hc <- imbal_train %>% 
+        hchart('scatter', hcaes(x = Total_Trans_Ct, y = Total_Trans_Amt, group = Attrition_Flag)) %>%
+        hc_colors(c("#00AFBB", "#E7B800", "#FC4E07")) %>%
+  hc_add_theme(hc_theme_smpl()) %>% 
+  hc_legend(align = "center") %>%
+  hc_title(text = "Total_Trans_Ct vs Total_Trans_Amt", align = "center")%>%
+  hc_tooltip(formatter = JS("function(){
+                            return (' <br> Total transaction value (last 12 months): ' + this.y + ' <br> Total transaction count (last 12 months): ' + this.x)}"))
+
+hc
+
+```
+
+---
+
+## Joint Analysis of the Qualitative Attributes of the Clients of Each Group
+
+This analysis aims to describe, through a column chart, all the qualitative characteristics of customers who have left credit card services or not. Each column or rectangle of the graph represents the relative percentage of a given characteristic within the group (Existing Customer or Attrited Customer).
+
+This type of graph can be used to filter the following type of information: "Of the group of customers who abandoned the credit card service, <strong>41.06%</strong> were single, while of the group of people who stayed with a credit card, only <strong>38,53%</strong> were single".
+
+
+```{r echo=F}
+
+# Function to obtain the relative frequency of each class 
+atr_categorical <- function(df, atr, grupo){
+
+  df <- data.frame(round(prop.table(table(df[atr])) * 100, 2))
+  new_df <- data.frame(Class = df$Var1, Percent = df$Freq, Grupo = grupo)
+  return(new_df)
+}
+
+# Getting the names of qualitative variables from the dataset and creating dataframe
+cols <- colnames(dados[, sapply(dados, is.factor)])
+df   <- data.frame(Class = character(), Percent = character(), Grupo = character())
+df1   <- data.frame(Class = character(), Percent = character(), Grupo = character())
+df2   <- data.frame(Class = character(), Percent = character(), Grupo = character())
+
+# Filtering only observations from a specific customer group
+df_attritedc <- filter(dados, Attrition_Flag == "Attrited Customer")
+df_existingc <- filter(dados, Attrition_Flag == "Existing Customer")
+
+# Attrited Customer
+for(coluna in cols){
+  df <- rbind(df, data.frame(rbind(atr_categorical(df_attritedc, coluna, "Attrited Customer"))))
+  df1 <- rbind(df1, data.frame(rbind(atr_categorical(df_attritedc, coluna, "Attrited Customer"))))
+}
+
+# Existing Customer
+for(coluna in cols){
+  df <- rbind(df, data.frame(rbind(atr_categorical(df_attritedc, coluna, "Attrited Customer"))))
+  df2 <- rbind(df2, data.frame(rbind(atr_categorical(df_existingc, coluna, "Existing Customer"))))
+}
+
+df1 <- df1[df1$Class != "Attrited Customer" & df1$Class != "Existing Customer", ]
+df2 <- df2[df2$Class != "Attrited Customer" & df2$Class != "Existing Customer", ]
+df  <- df[df$Class != "Attrited Customer" & df$Class != "Existing Customer", ]
+
+hc <- highchart() %>% 
+  hc_xAxis(categories = df$Class) %>% 
+  hc_add_series(name = "Attrited Customer", data = df1$Percent) %>% 
+  hc_add_series(name = "Existing Customer", data = df2$Percent) %>% 
+  hc_chart(type = "column",
+           options3d = list(enabled = TRUE, beta = 15, alpha = 15)) %>%
+  hc_colors(c("#8B008B", "#FF4500", "#FC4E07")) %>%
+  hc_add_theme(hc_theme_bloom()) %>% 
+  hc_legend(align = "center") %>%
+  hc_title(text = "Relative Frequency Of Qualitative Characteristics Of Each Customer Group",
+    style = list(fontWeight = "bold", fontSize = "25px"), align = "center") %>%
+  hc_yAxis(title = list(text = "%"))
+
+hc
+
+```
+
+In the graph above, where the area of each rectangle represents the relative frequency of a given category belonging to a qualitative variable. In each of the characteristics presented in the x-axis of the graph, there is the relative frequency of two distinct groups, which are: 'Attracted Customer' (customers who left the card service) and 'Existing Customer' (customers who remained with the credit card services) '. Looking at the graph, it can be seen that when comparing the percentages of each category between the Attracted Client and Existing Client classes, there is no behavior that indicates that clients with certain qualities, such as sex, marital status or educational background, are more likely to drop out or stay with credit card services.
+
+To deepen the analysis of the characteristics of the qualitative attributes of customers and try to find some pattern, I will group all the particularities of customers who abandoned credit card services and search among all possible combinations within the qualitative attributes space of the data set, if there is a profile with certain qualities that stands out among all the others, that is, I will try to find a customer profile with certain particularities, that has an evasion rate that is very far from the others.
+
+---
+
+```{r echo=F}
+
+gp <- dados %>%
+        filter(Attrition_Flag == "Attrited Customer") %>%
+        select(Attrition_Flag, Gender, Education_Level, Marital_Status, Income_Category, Card_Category) %>%
+        group_by(Gender, Education_Level, Marital_Status, Income_Category, Card_Category) %>%
+        count(Attrition_Flag) %>%
+        select(Gender, Education_Level, Marital_Status, Income_Category, Card_Category, n) %>%
+        arrange(desc(n))
+
+gp$Relative.Frequency <- round(prop.table(gp$n) * 100, 2)
+gp$n = NULL
+
+datatable(gp)
+```
+
+---
+
+Although it is necessary to take into account other variables so that it is possible to make concrete statements, with the table of groups of characteristics and their respective relative percentages, we have, based on qualitative attributes of customers, of 275 different combinations of characteristics of qualitative attributes <strong>9.78%</strong> of profiles responsible for leaving card services are:
+
++ <strong>4.92%</strong> are female, undergraduate educational level, married marital status, annual income of less than $ 40K and type of blue card.
+
++ <strong>4.86%</strong> are female, undergraduate educational level, single marital status, annual income of less than $ 40K and type of blue card.
+
+To see the profiles less likely to leave card services, just go to the last notes in the table above.
+
+# Feature Engine
+
+All the decisions made in the resource engineering process were the ones that I thought were the best to prepare the data for the machine learning process. I will use basic techniques, such as data banning to reduce the high number of unique values, one-hot coding for nominal qualitative variables and applying the synthetic minority oversampling technique to balance classes in training data.
+
+
+## Group Data into Bins
+
+Data binning is a method of data pre-processing used to minimize the effects of small observation errors. The values of the original data are divided into small intervals known as bins and are then replaced by an overall calculated value for that bin. This has a smoothing effect on the input data and can also reduce the chances of overfitting for small data sets.
+
+There are 2 methods of dividing data into boxes
+
++ 1 Binning of equal frequency: bins have equal frequency.
+
++ 2 Binning of equal width: bins are of equal width with an interval of each bin are defined as [min + w], [min + 2w]…. [min + nw] where w = (max - min) / (number of boxes).
+
+To define the number of bins, I will use the Sturges rule that allows us to create fixed amplitude classes from the following equation:
+
+---
+
+Sturges Rule
+
+$k = 1 + \frac{10}{3}log_{10}n$
+
+---
+
+```{r}
+
+# Creating a copy of the data set
+data <- dados
+
+# Applying the sturges rule to obtain the number of intervals
+n <- nrow(data)
+k <- round((1 + (10 / 3) * log10(n))) # 14 Grupos
+
+# Creating new columns with the grouped values
+cols     <- colnames(data[, sapply(data, is.numeric)])
+new_cols <- unlist(lapply(cols, function(x) paste(x, "_f", sep = "")))
+
+# Creating groups with the data_binning function
+data_binning <- function(x, k){
+  
+  gp <- cut(x, breaks = k, include.lowest = T, ordered_result = T)
+  return(gp)
+}
+data[, new_cols] <- Map(function(x, k) as.factor(data_binning(data[, x], k)), cols, k)
+
+```
+
+---
+
+### I {.tabset .tabset-fade .tabset-pills}
+
+#### Total_Trans_Ct
+
+```{r echo=F}
+
+
+h1 <- hchart(hist(data$Total_Trans_Ct, breaks = 30, plot = F), 
+             type = 'histogram', name = 'Total_Trans_Ct') %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B")) %>%
+        hc_yAxis(title = list(text = ""))
+
+
+h2 <- data %>%
+        select(Total_Trans_Ct_f) %>%
+        group_by(Total_Trans_Ct_f) %>%
+        count() 
+
+h2 <- highchart() %>% 
+        hc_chart(type ="column", options3d = list(enabled = TRUE, beta = 15, alpha = 15)) %>%
+        hc_xAxis(categories = h2$Total_Trans_Ct_f) %>% 
+        hc_add_series(data = h2$n, name = "Total_Trans_Ct_f") %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B"))
+
+
+hw_grid(h1, h2, ncol = 2)
+
+```
+
+#### Avg_Utilization_Ratio
+
+```{r echo=F}
+
+
+h1 <- hchart(hist(data$Avg_Utilization_Ratio, breaks = 30, plot = F), 
+             type = 'histogram', name = 'Avg_Utilization_Ratio') %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B")) %>%
+        hc_yAxis(title = list(text = ""))
+
+h2 <- data %>%
+        select(Avg_Utilization_Ratio_f) %>%
+        group_by(Avg_Utilization_Ratio_f) %>%
+        count()
+
+h2 <- highchart() %>% 
+        hc_chart(type ="column", options3d = list(enabled = TRUE, beta = 15, alpha = 15)) %>%
+        hc_xAxis(categories = h2$Avg_Utilization_Ratio_f) %>% 
+        hc_add_series(data = h2$n, name = "Avg_Utilization_Ratio_f") %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B"))
+
+
+hw_grid(h1, h2, ncol = 2)
+
+```
+
+#### Total_Ct_Chng_Q4_Q1
+
+```{r echo=F}
+
+
+h1 <- hchart(hist(data$Total_Ct_Chng_Q4_Q1, breaks = 30, plot = F), 
+             type = 'histogram', name = 'Total_Ct_Chng_Q4_Q1') %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B")) %>%
+        hc_yAxis(title = list(text = ""))
+
+
+h2 <- data %>%
+        select(Total_Ct_Chng_Q4_Q1_f) %>%
+        group_by(Total_Ct_Chng_Q4_Q1_f) %>%
+        count()
+
+h2 <- highchart() %>% 
+        hc_chart(type ="column", options3d = list(enabled = TRUE, beta = 15, alpha = 15)) %>%
+        hc_xAxis(categories = h2$Total_Ct_Chng_Q4_Q1_f) %>% 
+        hc_add_series(data = h2$n, name = "Total_Ct_Chng_Q4_Q1_f") %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B"))
+
+
+hw_grid(h1, h2, ncol = 2)
+
+```
+
+#### Total_Trans_Amt
+
+```{r echo=F}
+
+
+h1 <- hchart(hist(data$Total_Trans_Amt, breaks = 30, plot = F), 
+             type = 'histogram', name = 'Total_Trans_Amt') %>%
+      hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B")) %>%
+      hc_yAxis(title = list(text = ""))
+
+
+h2 <- data %>%
+        select(Total_Trans_Amt_f) %>%
+        group_by(Total_Trans_Amt_f) %>%
+        count() 
+
+h2 <- highchart() %>% 
+        hc_chart(type ="column", options3d = list(enabled = TRUE, beta = 15, alpha = 15)) %>%
+        hc_xAxis(categories = h2$Total_Trans_Amt_f) %>% 
+        hc_add_series(data = h2$n, name = "Total_Trans_Amt_f") %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B"))
+
+
+hw_grid(h1, h2, ncol = 2)
+
+```
+
+
+### II {.tabset .tabset-fade .tabset-pills}
+
+#### Total_Amt_Chng_Q4_Q1
+
+```{r echo=F}
+
+
+h1 <- hchart(hist(data$Total_Amt_Chng_Q4_Q1, breaks = 30, plot = F), 
+             type = 'histogram', name = 'Total_Amt_Chng_Q4_Q1') %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B")) %>%
+        hc_yAxis(title = list(text = ""))
+
+
+h2 <- data %>%
+        select(Total_Amt_Chng_Q4_Q1_f) %>%
+        group_by(Total_Amt_Chng_Q4_Q1_f) %>%
+        count()
+
+h2 <- highchart() %>% 
+        hc_chart(type ="column", options3d = list(enabled = TRUE, beta = 15, alpha = 15)) %>%
+        hc_xAxis(categories = h2$Total_Amt_Chng_Q4_Q1_f) %>% 
+        hc_add_series(data = h2$n, name = "Total_Amt_Chng_Q4_Q1_f") %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B"))
+
+
+hw_grid(h1, h2, ncol = 2)
+
+```
+
+#### Avg_Open_To_Buy
+
+```{r echo=F}
+
+
+h1 <- hchart(hist(data$Avg_Open_To_Buy, breaks = 30, plot = F), 
+             type = 'histogram', name = 'Avg_Open_To_Buy') %>%
+      hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B")) %>%
+      hc_yAxis(title = list(text = ""))
+
+
+h2 <- data %>%
+        select(Avg_Open_To_Buy_f) %>%
+        group_by(Avg_Open_To_Buy_f) %>%
+        count() 
+
+h2 <- highchart() %>% 
+        hc_chart(type ="column", options3d = list(enabled = TRUE, beta = 15, alpha = 15)) %>%
+        hc_xAxis(categories = h2$Avg_Open_To_Buy_f) %>% 
+        hc_add_series(data = h2$n, name = "Avg_Open_To_Buy_f") %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B"))
+
+
+hw_grid(h1, h2, ncol = 2)
+
+```
+
+#### Total_Revolving_Bal
+
+```{r echo=F}
+
+
+h1 <- hchart(hist(data$Total_Revolving_Bal, breaks = 30, plot = F), 
+             type = 'histogram', name = 'Total_Revolving_Bal') %>%
+      hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B")) %>%
+      hc_yAxis(title = list(text = ""))
+
+
+h2 <- data %>%
+        select(Total_Revolving_Bal_f) %>%
+        group_by(Total_Revolving_Bal_f) %>%
+        count() 
+
+h2 <- highchart() %>% 
+        hc_chart(type ="column", options3d = list(enabled = TRUE, beta = 15, alpha = 15)) %>%
+        hc_xAxis(categories = h2$Total_Revolving_Bal_f) %>% 
+        hc_add_series(data = h2$n, name = "Total_Revolving_Bal_f") %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B"))
+
+
+hw_grid(h1, h2, ncol = 2)
+
+```
+
+
+#### Credit_Limit
+
+```{r echo=F}
+
+
+h1 <- hchart(hist(data$Credit_Limit, breaks = 30, plot = F), 
+             type = 'histogram', name = 'Credit_Limit') %>%
+      hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B")) %>%
+      hc_yAxis(title = list(text = ""))
+
+
+h2 <- data %>%
+        select(Credit_Limit_f) %>%
+        group_by(Credit_Limit_f) %>%
+        count() 
+
+h2 <- highchart() %>% 
+        hc_chart(type ="column", options3d = list(enabled = TRUE, beta = 15, alpha = 15)) %>%
+        hc_xAxis(categories = h2$Credit_Limit_f) %>% 
+        hc_add_series(data = h2$n, name = "Credit_Limit_f") %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B"))
+
+
+hw_grid(h1, h2, ncol = 2)
+
+```
+
+
+### III {.tabset .tabset-fade .tabset-pills}
+
+#### Contacts_Count_12_mon
+
+```{r echo=F}
+
+
+h1 <- hchart(hist(data$Contacts_Count_12_mon, breaks = 30, plot = F), 
+             type = 'histogram', name = 'Contacts_Count_12_mon') %>%
+      hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B")) %>%
+      hc_yAxis(title = list(text = ""))
+
+
+h2 <- data %>%
+        select(Contacts_Count_12_mon_f) %>%
+        group_by(Contacts_Count_12_mon_f) %>%
+        count()
+
+h2 <- highchart() %>% 
+        hc_chart(type ="column", options3d = list(enabled = TRUE, beta = 15, alpha = 15)) %>%
+        hc_xAxis(categories = h2$Contacts_Count_12_mon_f) %>% 
+        hc_add_series(data = h2$n, name = "Contacts_Count_12_mon_f") %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B"))
+
+
+hw_grid(h1, h2, ncol = 2)
+
+```
+
+#### Months_Inactive_12_mon
+
+```{r echo=F}
+
+
+h1 <- hchart(hist(data$Months_Inactive_12_mon, breaks = 30, plot = F), 
+             type = 'histogram', name = 'Months_Inactive_12_mon') %>%
+      hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B")) %>%
+      hc_yAxis(title = list(text = ""))
+
+
+h2 <- data %>%
+        select(Months_Inactive_12_mon_f) %>%
+        group_by(Months_Inactive_12_mon_f) %>%
+        count() 
+
+h2 <- highchart() %>% 
+        hc_chart(type ="column", options3d = list(enabled = TRUE, beta = 15, alpha = 15)) %>%
+        hc_xAxis(categories = h2$Months_Inactive_12_mon_f) %>% 
+        hc_add_series(data = h2$n, name = "Months_Inactive_12_mon_f") %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B"))
+
+
+hw_grid(h1, h2, ncol = 2)
+
+```
+
+
+
+#### Total_Relationship_Count
+
+```{r echo=F}
+
+h1 <- hchart(hist(data$Total_Relationship_Count, breaks = 30, plot = F), 
+             type = 'histogram', name = 'Total_Relationship_Count') %>%
+      hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B")) %>%
+      hc_yAxis(title = list(text = ""))
+
+
+h2 <- data %>%
+        select(Total_Relationship_Count_f) %>%
+        group_by(Total_Relationship_Count_f) %>%
+        count()
+
+h2 <- highchart() %>% 
+        hc_chart(type ="column", options3d = list(enabled = TRUE, beta = 15, alpha = 15)) %>%
+        hc_xAxis(categories = h2$Total_Relationship_Count_f) %>% 
+        hc_add_series(data = h2$n, name = "Total_Relationship_Count_f") %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B")) %>% 
+        hc_add_theme(hc_theme_smpl())
+
+
+hw_grid(h1, h2, ncol = 2)
+
+```
+
+
+### IV {.tabset .tabset-fade .tabset-pills}
+
+#### Months_on_book
+
+```{r echo=F}
+
+
+h1 <- hchart(hist(data$Months_on_book, breaks = 30, plot = F), 
+             type = 'histogram', name = 'Months_on_book') %>%
+      hc_yAxis(title = list(text = "")) %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B"))
+
+
+h2 <- data %>%
+        select(Months_on_book_f) %>%
+        group_by(Months_on_book_f) %>%
+        count()
+
+h2 <- highchart() %>% 
+        hc_chart(type ="column", options3d = list(enabled = TRUE, beta = 15, alpha = 15)) %>%
+        hc_xAxis(categories = h2$Months_on_book_f) %>% 
+        hc_add_series(data = h2$n, name = "Months_on_book_f") %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B")) %>% 
+        hc_add_theme(hc_theme_smpl())
+
+
+hw_grid(h1, h2, ncol = 2)
+
+```
+
+#### Dependent_count
+
+```{r echo=F}
+
+
+h1 <- hchart(hist(data$Dependent_count, breaks = 30, plot = F), 
+             type = 'histogram', name = 'Dependent_count') %>%
+      hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B")) %>%
+      hc_yAxis(title = list(text = ""))
+
+
+h2 <- data %>%
+        select(Dependent_count_f) %>%
+        group_by(Dependent_count_f) %>%
+        count()
+
+h2 <- highchart() %>% 
+        hc_chart(type ="column", options3d = list(enabled = TRUE, beta = 15, alpha = 15)) %>%
+        hc_xAxis(categories = h2$Dependent_count_f) %>% 
+        hc_add_series(data = h2$n, name = "Dependent_count_f") %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B")) %>% 
+        hc_add_theme(hc_theme_smpl())
+
+
+hw_grid(h1, h2, ncol = 2)
+
+```
+
+#### Customer_Age
+
+```{r echo=F}
+
+
+h1 <- hchart(hist(dados$Customer_Age, breaks = 30, plot = F), 
+             type = 'histogram', name = 'Customer_Age') %>%
+      hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B")) %>%
+      hc_yAxis(title = list(text = ""))
+
+
+h2 <- data %>%
+        select(Customer_Age_f) %>%
+        group_by(Customer_Age_f) %>%
+        count() 
+
+h2 <- highchart() %>% 
+        hc_chart(type ="column", options3d = list(enabled = TRUE, beta = 15, alpha = 15)) %>%
+        hc_xAxis(categories = h2$Customer_Age_f) %>% 
+        hc_add_series(data = h2$n, name = "Customer_Age_f") %>%
+        hc_colors(c("#FF4500", "#FFD700", "#008080", "#006400", "#1C1C1C", "#B8860B"))
+
+
+hw_grid(h1, h2, ncol = 2)
+
+```
+
+## One-hot Encoding
+
+The variables used for the One-hot Encoding process will only be the nominal qualitative ones, which are: Gender and Marital_Status.
+
+```{r}
+
+# Selecting only the variables that will be used for modeling
+cols <- c("Attrition_Flag", "Gender", "Education_Level", "Marital_Status", "Income_Category", "Card_Category", new_cols)
+data <- data[, cols]
+
+# Creating dummy variables
+vars_dummy <- data[, c("Gender", "Marital_Status")]
+dummy      <- dummyVars("~.", data = vars_dummy)
+dummy_     <- predict(dummy, vars_dummy) 
+
+# Concatenating the new dummy variables in the dataset
+data <- dplyr::select(cbind(data, dummy_), -c("Gender", "Marital_Status"))
+              
+```
+
+## Over-Sampling
+
+To correct the problem of unbalancing the classes of the data set, I will use the smote method.
+
+**SMOTE**
+
+SMOTE stands for Synthetic Minority Oversampling Technique. This is a statistical technique for increasing the number of cases in your dataset in a balanced way. The module works by generating new instances from existing minority cases that you supply as input. This implementation of SMOTE does not change the number of majority cases.
+
+The new instances are not just copies of existing minority cases; instead, the algorithm takes samples of the feature space for each target class and its nearest neighbors, and generates new examples that combine features of the target case with features of its neighbors. This approach increases the features available to each class and makes the samples more general.
+
+SMOTE takes the entire dataset as an input, but it increases the percentage of only the minority cases. For example, suppose you have an imbalanced dataset where just 1% of the cases have the target value A (the minority class), and 99% of the cases have the value B. To increase the percentage of minority cases to twice the previous percentage, you would enter 200 for SMOTE percentage in the module's properties.
+
+```{r }
+
+# Removing the original Attrition_Flag column
+data$Attrition_Flag = NULL
+
+# Transforming the independent variables to the numeric type
+data[, ] <- sapply(data[, ], as.numeric)
+
+# Class name changes using the original dataset
+data$Class <- as.factor(make.names(dados$Attrition_Flag))
+
+# Separating into training and test data
+set.seed(333)
+intrain      <- createDataPartition(data$Class, p = 0.8, list = F)
+imbal_train  <- data[intrain, ]
+imbal_test   <- data[-intrain, ]
+
+# Applying - SMOTE
+set.seed(333)
+smote_train <- SMOTE(Class ~ ., data  = imbal_train)
+
+ctrl <- trainControl(method = "repeatedcv", repeats = 5,
+                     classProbs = TRUE,
+                     summaryFunction = twoClassSummary)
+
+# SMOTE
+smote_outside <- train(Class ~ ., data = smote_train, 
+                       method = "treebag",
+                       nbagg = 50,
+                       metric = "ROC",
+                       trControl = ctrl)
+
+
+# Resume
+smote_outside
+
+```
+
+
+```{r echo=F}
+
+# c(0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.8, 0.9, 1)
+h1 = imbal_train %>%
+        select(Class) %>%
+        group_by(Class) %>% 
+        summarise(CNT = n())
+
+h1 <- billboarder() %>% 
+        bb_piechart(h1) %>% 
+        bb_legend(position = 'right') %>%
+        bb_title(text = "Original Data", padding = NULL, position = "center")
+
+
+h2 = smote_train %>%
+        select(Class) %>%
+        group_by(Class) %>% 
+        summarise(CNT = n())
+
+h2 <- billboarder() %>% 
+        bb_piechart(h2) %>% 
+        bb_legend(position = 'right') %>%
+        bb_title(text = "SMOTE Applied", padding = NULL, position = "center")
+
+hw_grid(h1, h2, ncol = 2)
+
+```
+
+
+# Feature Selection
+
+```{r }
+
+# Creating a copy of the training data
+smote_train_c       <- smote_train
+smote_train_c$Class <- sapply(smote_train$Class, sub_target1)
+
+# Applying the RandomForestClassifier algorithm to obtain the best attributes for the model
+fit <- lm(Class ~ ., method = "rf", data = smote_train_c)
+
+# Creating a DataFrame with information about the importance of each attribute
+best_vars <- data.frame(Var = row.names(varImp(fit)), Import = varImp(fit)$Overall)
+
+# Viewing the scores of the variables
+best_vars %>%
+  arrange(desc(Import)) %>%
+  hchart(type = "bar", hcaes(x = Var, y = round(Import, 2)), borderColor = "black") %>% 
+  hc_add_theme(hc_theme_bloom()) %>%
+  hc_xAxis(title = list(text = "Variables")) %>%
+  hc_yAxis(title = list(text = "Importance"))
+
+```
+
+# Machine Learning | xgbTree
+
+```{r}
+
+# Setting a Random Seed
+set.seed(333)
+
+# Selecting only variables with importance> 0.1
+variables_for_model <- filter(best_vars, Import >= 0.1)$Var
+
+# Selecting only the attributes of interest for the training and testing process
+training <- select(smote_train, c(variables_for_model, "Class"))
+testing  <- select(imbal_test,  c(variables_for_model, "Class"))
+
+# Cross-Validate 
+control <- trainControl(method = "cv", number = 5)
+
+# EXtreme Gradient Boosting Hyper Parameter Grid
+grid <- expand.grid(max_depth        = 17,     # [0, ∞] # 17
+                    nrounds          = 172,    # [0, ∞] # 170
+                    eta              = 0.4,    # [0, 1] # 0.4
+                    gamma            = 0.2,    # [0, ∞] # 0.2
+                    colsample_bytree = 0.8,    # (0, 1] # 0.8
+                    min_child_weight = 0.6,    # [0, ∞] # 0.6
+                    subsample        = 0.8)    # (0, 1] # 0.8
+
+# Training eXtreme Gradient Boosting
+xgbm.tune   = train(
+  x         = select(training, -c("Class")),
+  y         = training$Class,
+  method    = "xgbTree",
+  tuneGrid  = grid,
+  metric    = "Kappa",
+  verbose   = FALSE,
+  trControl = control,
+  
+ )
+
+# Model forecasts
+previsoes = predict(xgbm.tune, select(testing, -c("Class")))
+confusionMatrix(previsoes, testing$Class)
+
+```
+
+
+```{r echo=F}
+
+# Confusion Matrix
+prev_real <- data.frame(table(previsoes = previsoes, real = testing$Class))
+
+df_confusion            <- data.frame(c1 = prev_real$Freq[1:2], c2 = prev_real$Freq[3:4])
+row.names(df_confusion) <- c("Attrited.Customer", "Existing.Customer")
+colnames(df_confusion)  <- c("Attrited.Customer", "Existing.Customer")
+
+cm <- as.matrix(df_confusion) %>%
+        hchart() %>% 
+        hc_add_theme(hc_theme_smpl()) %>%
+        hc_title(text = "Confusion Matrix", align = "center") %>% 
+        hc_legend(align = "center") %>% 
+        hc_colorAxis(stops = color_stops(colors = viridis::inferno(10))) %>%
+        hc_plotOptions(series = list(boderWidth = 0, dataLabels = list(enabled = TRUE))) %>%
+        hc_subtitle(text = "Customer Churn Analysis", align = "center", 
+                    style = list(color = "#2b908f", fontWeight = "bold"))
+
+ac <- billboarder() %>% 
+        bb_gaugechart(value = 96.49)  %>%
+        bb_title(text = "Accuray Score", padding = 20, position = "center") %>% 
+        bb_legend(show = FALSE)
+
+hw_grid(cm, ac, ncol = 1)
+
+```
+
+# References
+
+https://www.geeksforgeeks.org/binning-in-data-mining/
+
+https://docs.microsoft.com/en-us/azure/machine-learning/studio-module-reference/smote
+
+
+
