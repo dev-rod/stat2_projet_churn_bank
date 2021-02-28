@@ -933,23 +933,17 @@ testing <-data[-intrain,]
 
 # ---- modification des classes lorsqu'il y a des trop fort desequilibres
 
-#CLASSE
-data_select <- data
-#classe_marital_class
-data_select[which(data_select$Marital_Status %in% c("Divorced", "Single")), "Marital_Status"] <-
-    "Single"
-#Card_category_class
-data_select[which(data_select$Card_Category %in% c("Gold", "platinum", "Silver")), "Card_Category"] <-
-    "Others"
-#Income_category_class
-data_select[which(data_select$Income_Category %in% c("Less than $40K", "$40K - $60K")), "Income_Category"] <-
-    "Less than $60K"
-data_select[which(data_select$Income_Category %in% c("$60K - $80K", "$80K - $120K", "$120K +")), "Income_Category"] <-
-    "More than $60K"
-# Warning message:   invalid factor level, NA generated
 
+# #CLASSE
+# data_select<-data
+# #classe_marital_class
+# data_select[which(data_select$Marital_Status %in% c("Divorced","Single")),"Marital_Status"]<-"Single"
+# #Card_category_class
+# data_select[which(data_select$Card_Category %in% c("Gold","platinum","Silver")),"Card_Category"]<-"Others"
+# #Income_category_class
+# data_select[which(data_select$Income_Category %in% c("Less than $40K","$40K - $60K")),"Income_Category"]<-"Less than $60K"
+# data_select[which(data_select$Income_Category %in% c("$60K - $80K","$80K - $120K","$120K +")),"Income_Category"]<-"More than $60K"
 
-# ---- Etude de la corelation
 
 
 # Graphique I des corrélations entre chacune des variables
