@@ -1,4 +1,4 @@
-# Objectif: Prédire la résiliation d’un client bancaires
+# Objectif: Prédire la résiliation d’un client bancaire
 # Kaggle: https://www.kaggle.com/sakshigoyal7/credit-card-customers
 # Jeux d’apprentissage : 10 K lignes / 23 colonnes
 
@@ -59,9 +59,11 @@ if ("tidyverse" %in% rownames(installed.packages()) == FALSE) {
     install.packages("tidyverse", dependencies=TRUE)
 }
 library(tidyverse)
-# # if ("dplyr" %in% rownames(installed.packages()) == FALSE) {
-#     install.packages("dplyr")
-# }
+
+if ("dplyr" %in% rownames(installed.packages()) == FALSE) {
+     install.packages("dplyr", dependencies=TRUE)
+ }
+
 library(dplyr)
 # Regression subset selection, including exhaustive search.
 if ("leaps" %in% rownames(installed.packages()) == FALSE) {
@@ -97,26 +99,20 @@ if("sure" %in% rownames(installed.packages()) == FALSE) {install.packages("sure"
 # Fonctions diverses pour les graphiques "Grid"(grilles)
 if("gridExtra" %in% rownames(installed.packages()) == FALSE) {install.packages("gridExtra",dependencies=TRUE)};library(gridExtra)
 
-
-
-
+# pour installer un nouveau package
 # install.packages("package_name", repos=c("http://rstudio.org/_packages",
                                          # "http://cran.rstudio.com",dependencies=TRUE))
 
-# CONFLIT : confilt de select() entre les deux librairies
+# pour le probleme de CONFLIT de select() entre les deux librairies MASS et dplyr
 require(MASS)
 require(dplyr)
-# puis utiliser dplyr::select()
+# puis utiliser dplyr::select() pour utiliser le select() de la librairie dplyr. Par defaut c'est le select de la  la librairie MASS
 
-# pour ajouter une nouvelle librairie
+# pour ajouter une nouvelle librairie 
 # if("" %in% rownames(installed.packages()) == FALSE) {install.packages("")};library()
 
-# Error in names(frame) <- `*vtmp*` : names() applied to a non-vector
-
-# les librairies installées
+# Pour voir les librairies installées
 # library()
-
-# ```
 
 ##################################################################################-
 # 2 - Import des données  ####
@@ -126,24 +122,26 @@ require(dplyr)
 data <- read.csv("data/BankChurners.csv", sep = ",")
 # ```
 
-##### Vérification des types de champs et des valeurs nulles
-
-summary(data)
-# pas de NA
-
-length(unique(data$CLIENTNUM))
-# 10127 lignes pour 10127 numeros de compte => pas de doublons
-
-# les types
-#str(data)
-
-# Retrait des colonnes inutiles
+#####  Retrait des colonnes inutiles pour notre étude
 #   - CLIENTNUM
 #   - Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_1
 #   - Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_2
 data <- data[, -c(1, 22, 23)]
 
-# ---la variable a expliquer :Attrition_Flag ( Factor ) => regression logistique
+##### Vérification des valeurs nulles
+summary(data)
+# pas de valeurs nulles (NA)
+
+##### Vérification des doublons
+length(unique(data$CLIENTNUM))
+# 10127 lignes pour 10127 numeros de compte => pas de doublons
+
+##### Vérification des types de champs 
+str(data)
+
+
+##### la variable explicative : Attrition_Flag ( Factor )
+est une vartiable qualitative, le modele a utiliser est donc une regression logistique=> regression logistique
 
 summary(data)
 skim(data)
