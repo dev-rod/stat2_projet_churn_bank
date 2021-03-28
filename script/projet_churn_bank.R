@@ -4,7 +4,7 @@
 
 # TODO : https://www.kaggle.com/josephchan524/bankchurnersclassifier-recall-97-accuracy-95
 
-##################################################################################-
+##################################################################################
 # 1 - Chargement des librairies ####
 ##################################################################################-
 # ```{r}
@@ -92,10 +92,7 @@ if("ggpubr" %in% rownames(installed.packages()) == FALSE) {install.packages("ggp
 # Extraire et visualiser les résultats d’analyses de données multivariées
 if("factoextra" %in% rownames(installed.packages()) == FALSE) {install.packages("factoextra",dependencies=TRUE)};library(factoextra)
 # Surrogate Residuals for Ordinal and General Regression Models
-
 if("sure" %in% rownames(installed.packages()) == FALSE) {install.packages("sure",dependencies=TRUE)};library(sure)
-
-
 # Fonctions diverses pour les graphiques "Grid"(grilles)
 if("gridExtra" %in% rownames(installed.packages()) == FALSE) {install.packages("gridExtra",dependencies=TRUE)};library(gridExtra)
 
@@ -117,10 +114,7 @@ require(dplyr)
 ##################################################################################-
 # 2 - Import des données  ####
 ##################################################################################-
-
-# ```{r}
 data <- read.csv("data/BankChurners.csv", sep = ",")
-# ```
 
 #####  Retrait des colonnes inutiles pour notre étude
 #   - CLIENTNUM
@@ -139,12 +133,12 @@ length(unique(data$CLIENTNUM))
 ##### Vérification des types de champs 
 str(data)
 
-
 ##### la variable explicative : Attrition_Flag ( Factor )
-est une vartiable qualitative, le modele a utiliser est donc une regression logistique=> regression logistique
+# C'est une vartiable qualitative, le modele a utiliser est donc une regression logistique=> regression logistique
 
 summary(data)
-skim(data)
+print (skim(data))
+
 # ---les  variables qualitatives
 # 1 Card_Category           : Factor
 # 3 Gender                  : Factor
@@ -168,8 +162,6 @@ skim(data)
 # 13- Customer_Age            : int
 # 14- Dependent_count         : int
 
-
-
 # 20 colonnes restantes
 length (colnames(data))
 
@@ -177,36 +169,61 @@ length (colnames(data))
 # 3 - Analyse exploratoire des données (EDA)  ####
 ##################################################################################-
 
-### Creation de deux dataframe ##############################
-#### Séparation des clients :  ceux qui ont quitté la banque de ceux qui sont restés
+### 3.1 - creation de deux dataframe ##############################
+### Séparation des clients :  ceux qui ont quitté la banque de ceux qui sont restés
 
-# modification Attrition_Flag : 0 Existing Customer, 1 Attrited Customer ---
+####  modification Attrition_Flag : 0 Existing Customer, 1 Attrited Customer ----
 
 data$Attrition_Flag<-as.character(data$Attrition_Flag)
 data$Attrition_Flag[data$Attrition_Flag=="Existing Customer"]<-0
 data$Attrition_Flag[data$Attrition_Flag=="Attrited Customer"]<-1
 data$Attrition_Flag <- as_factor(data$Attrition_Flag)
 
-#### les deux datasets
-data_quit <- data[(data$Attrition_Flag) == 1, ] # 1627
-data_stay <- data[(data$Attrition_Flag) == 0, ] # 8500
-str(data_quit)
+#### Conversion des variables qualitatives facteurs et réordonnancement des niveaux de facon plus coherente ----
 
-#### Conversion des facteurs et réordonnancement des niveaux 
+# Attrition_Flag
 data$Attrition_Flag <- as_factor(data$Attrition_Flag)
+
+# Gender
 data$Gender <- as_factor(data$Gender)
+
+# Education_Level
 data$Education_Level <- as_factor(data$Education_Level)
+# réordonnancement par niveaux de diplome croissant
 data$Education_Level <- fct_relevel(data$Education_Level, "Unknown", "Uneducated", "High School", "College", "Graduate", "Post-Graduate", "Doctorate")
+
+# Marital_Status
 data$Marital_Status <- as_factor(data$Marital_Status)
+# réordonnancement par statut marital
 data$Marital_Status <- fct_relevel(data$Marital_Status, "Unknown", "Single", "Married", "Divorced")
+
+# Income_Category
 data$Income_Category <- as_factor(data$Income_Category)
+# réordonnancement par niveaux de revenu croissant
 data$Income_Category <- fct_relevel(data$Income_Category, "Unknown", "Less than $40K", "$40K - $60K", "$60K - $80K", "$80K - $120K", "$120K +")
+
+# Card_Category
 data$Card_Category <- as_factor(data$Card_Category)
+# réordonnancement par categrie de carte de credit croissant
 data$Card_Category <- fct_relevel(data$Card_Category, "Blue", "Silver", "Gold", "Platinum")
 
 str(data)
+skim(data)
 
-### Analyses des variables qualitatives ### ----
+
+#### les deux datasets ----
+data_quit <- data[(data$Attrition_Flag) == 1, ]
+skim(data_quit)
+str(data_quit)
+# 1627 obs.
+
+data_stay <- data[(data$Attrition_Flag) == 0, ]
+
+skim(data_stay)
+str(data_stay)
+
+
+### 3.1 - Analyses des 5 variables qualitatives ### ----
 
 attach(data)
 
@@ -231,8 +248,6 @@ ratio_F[2]  <-
     round((frequence_Gender$Freq[frequence_Gender$Gender == "F" &
                                      frequence_Gender$Attrition_Flag == "1"]) / (sum(frequence_Gender$Freq[frequence_Gender$Attrition_Flag ==
                                                                                                                "1"])), 3)
-
-
 ##### Plot attrition par genre ----
 
 # pour les desabonnements(Attrited Customers )
@@ -392,7 +407,7 @@ data_stay %>%
     labs(title = "Distribution par statut marital",
          x = "Existing Custumers", y = "NB")
 
-##### Les resultats ----
+##### Les resultats Marital_Status----
 # > ratio_Divorced
 # "0.074" "0.074" => parmi les divorcés on retrouve la meme proportion de client s qui partent que ceux qui restent.
 # > ratio_Unknown
@@ -496,7 +511,7 @@ data_quit %>%
     labs(title = "Distribution par type de CB",
          x = "Attrited Customers", y = "NB")
 #  pour les clients 
-data_quit %>%
+data_stay %>%
     dplyr::select(Attrition_Flag, Card_Category) %>%
     ggplot(aes(x = Attrition_Flag, fill = Card_Category)) +
     geom_bar(position = "dodge2") +
@@ -513,7 +528,7 @@ data_quit %>%
     labs(title = "Distribution par type de CB",
          x = "Existing custumes", y = "NB")
 
-#####Les resultats ---- 
+##### Les resultats par Card_Category---- 
 #  la proportion de catégorie de carte ne semble pas etre tres différente entre abonnés et desabonnés
 #  On observe pour ratio_Silver la plus grosse différence de pourcantage dans les deux groupes est de 0.6 %.
 # > ratio_Gold
@@ -653,7 +668,7 @@ data_stay %>%
     labs(title="Distribution par rentrée financière",
          x="Existing custumers",y="NB")
 
-#####Les resultats  
+##### Les resultats par classe de revenus  ----
 # => les proportions les plus notables  :
 #   - sont chez les plus bas revenus (- 40 K$):  3 % de différence dans la proportion de desabonnés parmi les desabonnés.
 # - les revenus moyens ("40-80 K$") :  on observe une différence de 1.2 % et 2.7 % des abonnés parmi l'ensemble des abonnés
@@ -779,10 +794,6 @@ ratio_Unknown[2] <-
 # > ratio_Unknown
 # "0.149" "0.157" (+0.8) légere différence de ratio parmi les "Unknown", un peu plus de desabonnés
 
-
-
-
-
 ##### Plot attrition par niveau d'education ----
 
 # pour les desabonnements(Attrited Customers )
@@ -814,29 +825,15 @@ data_stay %>%
         labs(title="Distribution par niveau d'étude",
              x="Existing Custumers",y="NB")
 
-#####Les resultats 
+#####Les resultats par niveau d'education (Education_Level) ----
 #  en fonction du niveau d'etude on voit une legere différence de proportion parmi les abonnées ou les desabonnés.
 # Il semble que le niveau d'etude relativement élevé (graduate, post graduate et doctorate) facilite de depart de la banque.
 # parmi les " unknox on trouve une tres legere surrepresentation des desabonnés
 
 # ---------------------------------------------------
-### 3.3 VARIABLES QUANTITATIVES ----
-
-#  14 varibles quanti
-
-# ???? TEST DE STUDENT ????
-# pour comparer des groupes dont les effectifs sont différentS : comparaison de moyenne
-# => test de student : http://www.sthda.com/french/wiki/test-de-student-est-il-toujours-correct-de-comparer-des-moyennes
-# source('http://www.sthda.com/upload/rquery_t_test.r')
-# rquery.t.test(x, y = NULL, paired = FALSE, graph = TRUE, ...)
-# exemple : rquery.t.test(data_quit$Avg_Open_To_Buy, data_stay$Avg_Open_To_Buy)
-# Error in shapiro.test(x) : sample size must be between 3 and 5000
-# ??????????????????????????????????????????????????????????????????????????????????
-
-
+### 3.3 LES 14 VARIABLES QUANTITATIVES ----
 
 ## Analyses visuelles 
-
 #### Customer_Age #### 
 
 #  histogramme
@@ -878,7 +875,7 @@ summary(aov(data_quit$Customer_Age~data_stay$Customer_Age))
 t.test(data_stay$Customer_Age~data_quit$Customer_Age,var.equal=TRUE)
 
 
-####   Months_on_book #### 
+#### Months_on_book #### 
 hist(Months_on_book)
 boxplot(Months_on_book ~ Attrition_Flag)
 
@@ -890,11 +887,11 @@ barplot(table(data$Months_on_book[data$Attrition_Flag == 1]))
 hist(Months_on_book)
 barplot(Contacts_Count_12_mon)
 boxplot(Months_on_book ~ Attrition_Flag)
-####  Months_Inactive_12_mon #### 
+#### Months_Inactive_12_mon #### 
 
 
 
-####  Contacts_Count_12_mon#### 
+#### Contacts_Count_12_mon#### 
 hist(Contacts_Count_12_mon)
 boxplot(Contacts_Count_12_mon ~ Attrition_Flag)
 
@@ -906,10 +903,10 @@ plot_Contacts_Count_12_mon <-
     labs(title = 'Total Transaction Count (Last 12 months) by flag') +
     theme(legend.position = 'bottom')
 plot_Contacts_Count_12_mon
-#### Credit_Limit #### 
+#### Credit_Limit ----
 hist(Credit_Limit)
 boxplot(Credit_Limit ~ Attrition_Flag)
-####  Total_Revolving_Bal #### 
+#### Total_Revolving_Bal #### 
 hist(Total_Revolving_Bal)
 boxplot(Total_Revolving_Bal ~ Attrition_Flag)
 #### Avg_Open_To_Buy #### 
@@ -918,7 +915,7 @@ boxplot(Avg_Open_To_Buy ~ Attrition_Flag)
 #### Total_Amt_Chng_Q4_Q1 #### 
 hist(Total_Amt_Chng_Q4_Q1)
 boxplot(Total_Amt_Chng_Q4_Q1 ~ Attrition_Flag)
-#### Total_Trans_Amt #### 
+#### Total_Trans_Amt ----
 hist(Total_Trans_Ct)
 boxplot(Total_Trans_Ct ~ Attrition_Flag)
 #### Total_Trans_Ct #### 
@@ -934,7 +931,7 @@ plot_Total_Trans_Ct <-
     labs(title = 'Total Transaction Count (Last 12 months) by flag') +
     theme(legend.position = 'bottom')
 plot_Total_Trans_Ct
-#### Total_Ct_Chng_Q4_Q1 #### 
+#### Total_Ct_Chng_Q4_Q1 ----
 hist(Total_Ct_Chng_Q4_Q1)
 boxplot(Total_Ct_Chng_Q4_Q1 ~ Attrition_Flag)
 #### Avg_Utilization_Ratio #### 
@@ -949,28 +946,8 @@ boxplot(Dependent_count ~ Attrition_Flag)
 
 
 
+
 ### 3.4 CORRELATION ENTRE VARIABLE ----
-
-#Model complet test
-data_select<-data
-data_select$Attrition_Flag <- as.factor(data_select$Attrition_Flag)
-data_select<-c("Attrition_Flag","Customer_Age","Dependent_count","Months_on_book","Total_Relationship_Count","Months_Inactive_12_mon","Contacts_Count_12_mon","Credit_Limit","Total_Revolving_Bal","Avg_Open_To_Buy","Total_Amt_Chng_Q4","Total_Trans_Amt","Total_Trans_Ct","Total_Ct_Chng_Q4_Q1","Avg_Utilization_Ratio")
-data_select<-as.factor(data_select)
-simple.model <- glm(Attrition_Flag ~1, data = data_select, family = binomial)
-summary(simple.model)
-
-
-
-
-#Echantillonnage pour plus tard
-data_quit<-data[(data$Attrition_Flag)=="Quit",]
-data_stay<-data[(data$Attrition_Flag)=="Stay",]
-sample_quit<-sample(1:dim(data_quit)[1],1000)
-sample_Stay<-sample(1:dim(data_stay)[1],1000)
-data_reg<-rbind(data_quit[sample_quit,],data_stay[sample_Stay,])
-table(data_reg$Attrition_Flag)
-
-
 
 # Graphique I des corrélations entre chacune des variables
 # data %>% select(where(is.numeric)) %>%
@@ -981,7 +958,6 @@ table(data_reg$Attrition_Flag)
 # Graphique II des corrélations entre chacune des variables avec la méthode de spearman
 cor_spearman <-
     cor(data[, sapply(data, is.numeric)], method = 'spearman')
-
 
 # Visualizing with a heatmap the correlation matrix with the pearson method
 as.matrix(data.frame(cor_spearman)) %>%
@@ -1003,110 +979,75 @@ ggplot(data, aes(x=Total_Trans_Amt, y= Total_Trans_Ct)) + geom_point(color = "re
 ggplot(data, aes(x=Total_Revolving_Bal, y= Avg_Utilization_Ratio)) + geom_point(color = "blue",size= 0.3) + theme_classic() + ggtitle("Total Revolving Bal vs Avg Utilization Ratio")
 
 
-#----Faire des clusters (Kmeans /clusters de clients sui partent vs qui restent)
+#----Faire des clusters (Kmeans /clusters de clients sui partent vs qui restent) => RODRIGUE
 # https://www.datanovia.com/en/fr/blog/visualisation-du-clustering-k-means-dans-r-guide-etape-par-etape/
 
+# # PCA KMEANS  trouvé sur Kaggle => en doc "who'sgonna churn?"
+# # => pb de library pour les fonction (tableGrob et "get_eigenvalue")
+# data_k <- data %>% mutate_if(is.factor,as.numeric)
+# # seed
+# set.seed(2)
+# # CLUSTERING USING KMEANS
+# res.km <- kmeans(scale(data_k[, -1]), 6, nstart = 25)
+# # DIMENSION REDUCTION USING PCA
+# res.pca <- prcomp(data_k[, -1],  scale = TRUE)
+# 
+# # Coordinates
+# ind.coord <- as.data.frame(get_pca_ind(res.pca)$coord)
+# 
+# # Add clusters obtained using the K-means algorithm
+# ind.coord$cluster <- factor(res.km$cluster)
+# 
+# # Add target from original dataset
+# ind.coord$target <- data$Attrition_Flag
+# pca_cluster <- ind.coord %>% group_by(target,cluster) %>% count() %>% as.data.frame()
+# percentage_total= pca_cluster %>% group_by(target) %>% summarise(per_tot=n/sum(n)*100)
+# pca_cluster <- cbind(pca_cluster,'%'=round(percentage_total$per_tot,1))
+# c2 <- table(pca_cluster)
+# View(c2)
+# 
+# 
+# # Percentage of variance explained by dimensions
+# eigenvalue <- round(get_eigenvalue(res.pca), 1)
+# 
+# # factoextra : Extract and Visualize the Results of Multivariate Data Analyses
+# variance.percent <- eigenvalue$variance.percent
+# 
+# c3 <- ggscatter(
+#     ind.coord, x = "Dim.1", y = "Dim.2",
+#     color = "cluster", palette = "npg", ellipse = TRUE, ellipse.type = "convex",
+#     size = 1.5,  legend = "right", ggtheme = theme_bw(),
+#     xlab = paste0("Dim 1 (", variance.percent[1], "% )" ),
+#     ylab = paste0("Dim 2 (", variance.percent[2], "% )" )
+# ) +
+#     stat_mean(aes(color = cluster), size = 4) +
+#     theme_classic() +
+#     theme(legend.position='top')
+# 
+# 
+# grid.arrange(c2,c3,ncol=2,
+#              top=textGrob("Kmeans cluster and PCA",
+#                           gp=gpar(fontsize=18,font=1)))
 
-
-
-# PCA KMEANS  trouvé sur Kaggle => en doc "who'sgonna churn?"
-# => pb de library pour les fonction (tableGrob et "get_eigenvalue")
-data_k <- data %>% mutate_if(is.factor,as.numeric)
-# seed
-set.seed(2)
-# CLUSTERING USING KMEANS
-res.km <- kmeans(scale(data_k[, -1]), 6, nstart = 25)
-# DIMENSION REDUCTION USING PCA
-res.pca <- prcomp(data_k[, -1],  scale = TRUE)
-
-# Coordinates
-ind.coord <- as.data.frame(get_pca_ind(res.pca)$coord)
-
-# Add clusters obtained using the K-means algorithm
-ind.coord$cluster <- factor(res.km$cluster)
-
-# Add target from original dataset
-ind.coord$target <- data$Attrition_Flag
-pca_cluster <- ind.coord %>% group_by(target,cluster) %>% count() %>% as.data.frame()
-percentage_total= pca_cluster %>% group_by(target) %>% summarise(per_tot=n/sum(n)*100)
-pca_cluster <- cbind(pca_cluster,'%'=round(percentage_total$per_tot,1))
-c2 <- table(pca_cluster)
-View(c2)
-
-
-# Percentage of variance explained by dimensions
-eigenvalue <- round(get_eigenvalue(res.pca), 1)
-
-# factoextra : Extract and Visualize the Results of Multivariate Data Analyses
-variance.percent <- eigenvalue$variance.percent
-
-c3 <- ggscatter(
-    ind.coord, x = "Dim.1", y = "Dim.2",
-    color = "cluster", palette = "npg", ellipse = TRUE, ellipse.type = "convex",
-    size = 1.5,  legend = "right", ggtheme = theme_bw(),
-    xlab = paste0("Dim 1 (", variance.percent[1], "% )" ),
-    ylab = paste0("Dim 2 (", variance.percent[2], "% )" )
-) +
-    stat_mean(aes(color = cluster), size = 4) +
-    theme_classic() +
-    theme(legend.position='top')
-
-
-grid.arrange(c2,c3,ncol=2,
-             top=textGrob("Kmeans cluster and PCA",
-                          gp=gpar(fontsize=18,font=1)))
-
-
-
-
-
-
-
-
-
-
+# CONCLUSION DI NOTEBOOK 
 
 # THe 5 top features of determing a customer's attrition:
-
 # Total Transaction Count
 # Total Revolving Balance
 # Total Transaction Amount
 # Total Relationship Count
 # Total Count Change
 
-
-
-
-
-
-
-
-
 #----faire une AFC
 # http://www.sthda.com/french/articles/38-methodes-des-composantes-principales-dans-r-guide-pratique/74-afc-analyse-factorielle-des-correspondances-avec-r-l-essentiel/
 
 #  pour nous aider a trouver les perimetres de nos modeles (il y en aura surement pls)
 
-
-
-
-
-
-
 # variable dependante Y = départ ou non : attrition_flag
 # variable qualitative donc on fera une régression logistique
 
-
-
-
-
 # variable explicatives
 # age, genre, niveau education, statut marital, personnes à charge, revenu, type de carte, période de relation avec la banque...
-
-
-
-
-
 
 
 #partage du dataset en 70/30 
@@ -1202,3 +1143,12 @@ testing <-data[-intrain,]
 #     geom_col(color='black') + labs(title='Target Correlation', y='Variables') +
 #     theme_classic() +
 #     theme(legend.position = 'none')
+
+
+#Model complet test
+data_select<-data
+data_select$Attrition_Flag <- as.factor(data_select$Attrition_Flag)
+data_select<-c("Attrition_Flag","Customer_Age","Dependent_count","Months_on_book","Total_Relationship_Count","Months_Inactive_12_mon","Contacts_Count_12_mon","Credit_Limit","Total_Revolving_Bal","Avg_Open_To_Buy","Total_Amt_Chng_Q4","Total_Trans_Amt","Total_Trans_Ct","Total_Ct_Chng_Q4_Q1","Avg_Utilization_Ratio")
+data_select<-as.factor(data_select)
+simple.model <- glm(Attrition_Flag ~1, data = data_select, family = binomial)
+summary(simple.model)
