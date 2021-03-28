@@ -452,7 +452,10 @@ pca_cluster <- cbind(pca_cluster,'%'=round(percentage_total$per_tot,1))
 
 c2 <- tableGrob(pca_cluster)
 
-
+if(!require(devtools)) install.packages("devtools")
+devtools::install_github("kassambara/ggpubr")
+library(ggpubr)
+install.packages("broom")
 # Percentage of variance explained by dimensions
 eigenvalue <- round(get_eigenvalue(res.pca), 1)
 variance.percent <- eigenvalue$variance.percent
