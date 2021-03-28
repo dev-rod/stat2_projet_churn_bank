@@ -833,7 +833,16 @@ data_stay %>%
 # ---------------------------------------------------
 ### 3.3 LES 14 VARIABLES QUANTITATIVES ----
 
+#Echantillonnage pour plus tard
+data_quit<-data[(data$Attrition_Flag)=="Quit",]
+data_stay<-data[(data$Attrition_Flag)=="Stay",]
+sample_quit<-sample(1:dim(data_quit)[1],1000)
+sample_Stay<-sample(1:dim(data_stay)[1],1000)
+data_reg<-rbind(data_quit[sample_quit,],data_stay[sample_Stay,])
+table(data_reg$Attrition_Flag)
+
 ## Analyses visuelles 
+
 #### Customer_Age #### 
 
 #  histogramme
