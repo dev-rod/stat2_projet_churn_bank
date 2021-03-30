@@ -1,4 +1,4 @@
-# Objectif: Prédire la résiliation d’un client bancaires
+# Objectif: Prédire la résiliation d’un client bancaire
 # Kaggle: https://www.kaggle.com/sakshigoyal7/credit-card-customers
 # Jeux d’apprentissage : 10 K lignes / 23 colonnes
 
@@ -163,7 +163,6 @@ length (colnames(data))
 
 # modification Attrition_Flag : 0 Existing Customer, 1 Attrited Customer ---
 
-
 data$Attrition_Flag<-as.character(data$Attrition_Flag)
 data$Attrition_Flag[data$Attrition_Flag=="Existing Customer"]<-0
 data$Attrition_Flag[data$Attrition_Flag=="Attrited Customer"]<-1
@@ -180,6 +179,7 @@ data_stay <- data[(data$Attrition_Flag) == 0, ] # 8500
 str(data_quit)
 
 #### Conversion des facteurs et réordonnancement des niveaux 
+# plus parlant pour les graphes
 # data$Attrition_Flag <- as_factor(data$Attrition_Flag)
 # data$Gender <- as_factor(data$Gender)
 # data$Education_Level <- as_factor(data$Education_Level)
@@ -200,18 +200,21 @@ attach(data)
 #### Gender ####
 
 ##### tableaux de frequences par Attriction_Flag----
-
-#  les modalités
+# o cherche a trouver les relations entre 2 variables, à trouver les valeurs aberrantes (outliers)
+# et exclure les variables sans intérêt
+# les modalités
 unique (Gender)
 
 #  tableau de contingences
 frequence_Gender <- data.frame(table(Gender, Attrition_Flag))
 
 ratio_F <- c("0", "1")
+# ratio nb femmes restées / total restés
 ratio_F[1] <-
     round((frequence_Gender$Freq[frequence_Gender$Gender == "F" &
                                      frequence_Gender$Attrition_Flag == "0"]) / (sum(frequence_Gender$Freq[frequence_Gender$Attrition_Flag ==
                                                                                                               "0"])), 3)
+# ratio nb femmes parties / total partis
 ratio_F[2]  <-
     round((frequence_Gender$Freq[frequence_Gender$Gender == "F" &
                                      frequence_Gender$Attrition_Flag == "1"]) / (sum(frequence_Gender$Freq[frequence_Gender$Attrition_Flag ==
@@ -265,7 +268,7 @@ data_stay %>%
 # Resultats variable Gender ----
     # parmi Existing Customer "0.521" soit 52.1 % 
     # Attrited Customers : "0.572" soit 57.2 %
-    # 57 % des personnes aant fermées leur compte sont des femmes tandis que 52 % des clients de la 
+    # 57 % des personnes ont fermées leur compte sont des femmes tandis que 52 % des clients de la 
     # sont des femmes. Les femmes sont donc en sur representation parmi les desabonnés avec une différence de proportion de 5%.
 
 
@@ -281,10 +284,10 @@ frequence_Marital_Status <-
     data.frame(table(Attrition_Flag, Marital_Status))
 
 # les vecteurs pour les ratio par modalités
-# ratio_Divorced<- c("0","1")
-# ratio_Unknown<- c("0","1")
-# ratio_Single<- c("0","1")
-# ratio_Married <- c("0","1")
+ratio_Divorced<- c("0","1")
+ratio_Unknown<- c("0","1")
+ratio_Single<- c("0","1")
+ratio_Married <- c("0","1")
 
 ratio_Married[1] <-
     round((frequence_Marital_Status$Freq[frequence_Marital_Status$Marital_Status ==
@@ -296,20 +299,19 @@ ratio_Married[2] <-
                                              "Married" &
                                              frequence_Marital_Status$Attrition_Flag == "1"]) / (sum(frequence_Marital_Status$Freq[frequence_Marital_Status$Attrition_Flag ==
                                                                                                                                        "1"])), 3)
-# > ratio_Married
+ratio_Married
 # "0.468" "0.436" 
 
 ratio_Single[1] <-
     round((frequence_Marital_Status$Freq[frequence_Marital_Status$Marital_Status ==
                                              "Single" &
-                                             frequence_Marital_Status$Attrition_Flag == "0"]) / (sum(frequence_Marital_Status$Freq[frequence_Marital_Status$Attrition_Flag ==
-                                                                                                                                       "0"])), 3)
+                                             frequence_Marital_Status$Attrition_Flag == "0"]) / (sum(frequence_Marital_Status$Freq[frequence_Marital_Status$Attrition_Flag =="0"])), 3)
 ratio_Single[2] <-
     round((frequence_Marital_Status$Freq[frequence_Marital_Status$Marital_Status ==
                                              "Single" &
                                              frequence_Marital_Status$Attrition_Flag == "1"]) / (sum(frequence_Marital_Status$Freq[frequence_Marital_Status$Attrition_Flag ==
                                                                                                                                        "1"])), 3)
-# > ratio_Single
+ratio_Single
 # "0.385" "0.411" 
 
 ratio_Unknown[1] <-
@@ -322,7 +324,7 @@ ratio_Unknown[2] <-
                                              "Unknown" &
                                              frequence_Marital_Status$Attrition_Flag == "1"]) / (sum(frequence_Marital_Status$Freq[frequence_Marital_Status$Attrition_Flag ==
                                                                                                                                        "1"])), 3)
-# > ratio_Unknown
+ratio_Unknown
 # "0.073" "0.079"
 
 ratio_Divorced[1] <-
@@ -335,7 +337,7 @@ ratio_Divorced[2] <-
                                              "Divorced" &
                                              frequence_Marital_Status$Attrition_Flag == "1"]) / (sum(frequence_Marital_Status$Freq[frequence_Marital_Status$Attrition_Flag ==
                                                                                                                                        "1"])), 3)
-# > ratio_Divorced
+ratio_Divorced
 # "0.074" "0.074" 
  
 ##### Plot attrition par statut marital ----
@@ -417,7 +419,7 @@ ratio_Gold[2] <-
                                             "Gold" &
                                             frequence_Card_Category$Attrition_Flag == "1"]) / (sum(frequence_Card_Category$Freq[frequence_Card_Category$Attrition_Flag ==
                                                                                                                                     "1"])), 3)
-# > ratio_Gold
+ratio_Gold
 #  "0.011" "0.013" => parmi les clients "carte Gold" peu de différence entre cleints qui partent et qui restent (+0.02%)
 
 ratio_Blue[1] <-
@@ -430,7 +432,7 @@ ratio_Blue[2] <-
                                             "Blue" &
                                             frequence_Card_Category$Attrition_Flag == "1"]) / (sum(frequence_Card_Category$Freq[frequence_Card_Category$Attrition_Flag ==
                                                                                                                                     "1"])), 3)
-# > ratio_Blue
+ratio_Blue
 #  "0.931" "0.934" => parmi les clients "carte Blue" peu de différence entre clients qui partent et qui restent (+0.03%)
 
 ratio_Platinum[1] <-
@@ -443,7 +445,7 @@ ratio_Platinum[2] <-
                                             "Platinum" &
                                             frequence_Card_Category$Attrition_Flag == "1"]) / (sum(frequence_Card_Category$Freq[frequence_Card_Category$Attrition_Flag ==
                                                                                                                                     "1"])), 3)
-# > ratio_Platinum
+ratio_Platinum
 # "0.002" "0.003" => parmi les clients "carte Platinum" peu de différence entre clients qui partent et qui restent (+0.1%)
 
 ratio_Silver[1] <-
@@ -456,7 +458,7 @@ ratio_Silver[2] <-
                                             "Silver" &
                                             frequence_Card_Category$Attrition_Flag == "1"]) / (sum(frequence_Card_Category$Freq[frequence_Card_Category$Attrition_Flag ==
                                                                                                                                     "1"])), 3)
-# > ratio_Silver
+ratio_Silver
 #  "0.056" "0.050"  => parmi les clients "carte Silver" peu de différence entre clients qui partent et qui restent (-0.6 %)
 
 ##### Plot attrition par types de cartes de crédits ----
@@ -480,7 +482,7 @@ data_quit %>%
     labs(title = "Distribution par type de CB",
          x = "Attrited Customers", y = "NB")
 #  pour les clients 
-data_quit %>%
+data_stay %>%
     dplyr::select(Attrition_Flag, Card_Category) %>%
     ggplot(aes(x = Attrition_Flag, fill = Card_Category)) +
     geom_bar(position = "dodge2") +
@@ -520,6 +522,7 @@ data_quit %>%
 #  tableau de contingeences
 frequence_Income_Category <-
     data.frame(table(Attrition_Flag, Income_Category))
+frequence_Income_Category
 
 #  vecteurs des ratios
 
@@ -540,7 +543,7 @@ ratio_moins40[2] <-
                                               "Less than $40K" &
                                               frequence_Income_Category$Attrition_Flag == "1"]) / (sum(frequence_Income_Category$Freq[frequence_Income_Category$Attrition_Flag ==
                                                                                                                                           "1"])), 2)
-# > ratio_moins40   #  "0.347" "0.376"  parmi les "Less than $40K" la proportion est  plus fortes pour les desabonnés  (+3 %)
+ratio_moins40   #  "0.347" "0.376"  parmi les "Less than $40K" la proportion est  plus fortes pour les desabonnés  (+3 %)
 
 ratio_40_60[1] <-
     round((frequence_Income_Category$Freq[frequence_Income_Category$Income_Category ==
@@ -619,7 +622,7 @@ data_quit %>%
               vjust=-4,
               position = position_dodge(.9))+
     labs(title="Distribution par rentrée financière",
-         x="Attrited Customers",y="NB")
+         x="Attrited Customers", y="NB")
 
 #  pour les clients 
 data_stay %>%
@@ -633,7 +636,7 @@ data_stay %>%
               vjust=-4,
               position = position_dodge(.9))+
     labs(title="Distribution par rentrée financière",
-         x="Existing custumers",y="NB")
+         x="Existing custumers", y="NB")
 
 #####Les resultats  
 # => les proportions les plus notables  :
@@ -796,7 +799,7 @@ data_stay %>%
         labs(title="Distribution par niveau d'étude",
              x="Existing Custumers",y="NB")
 
-#####Les resultats 
+##### Les resultats 
 #  en fonction du niveau d'etude on voit une legere différence de proportion parmi les abonnées ou les desabonnés.
 # Il semble que le niveau d'etude relativement élevé (graduate, post graduate et doctorate) facilite de depart de la banque.
 # parmi les " unknox on trouve une tres legere surrepresentation des desabonnés
@@ -817,8 +820,8 @@ data_stay %>%
 
 #--- les 14 variables quantitatives
 
-#  regarder le distribution
-#  faire un graphique en fonctio de L'Attrition_Flag
+#  regarder la distribution
+#  faire un graphique en fonction de L'Attrition_Flag
 # regarder les variances 65.3
 
 hist(data_stay$Customer_Age)
@@ -831,7 +834,7 @@ var(data_quit$Customer_Age)
 
 boxplot(Customer_Age ~ Attrition_Flag)
 
-t.test(data_stay$Customer_Age~data_quit$Customer_Age,var.equal=TRUE)
+t.test(data_stay$Customer_Age~data_quit$Customer_Age, var.equal=TRUE)
 
 # 58.76221
 summary(aov(data_quit$Customer_Age~data_stay$Customer_Age))
@@ -850,8 +853,6 @@ hist(Months_on_book)
 barplot(Contacts_Count_12_mon)
 boxplot(Months_on_book ~ Attrition_Flag)
 # 3- Months_Inactive_12_mon  : int
-
-
 
 # 4- Contacts_Count_12_mon   : int
 hist(Contacts_Count_12_mon)
@@ -918,10 +919,6 @@ pCustumer_Age <-
 pCustumer_Age
 
 
-
-
-
-
 #partage du dataset en 70/30 
 
 intrain<-createDataPartition(data$Attrition_Flag,p=0.7,
@@ -945,15 +942,13 @@ testing <-data[-intrain,]
 # data_select[which(data_select$Income_Category %in% c("$60K - $80K","$80K - $120K","$120K +")),"Income_Category"]<-"More than $60K"
 
 
-#Model complet test
+# Model complet test
 data_select<-data
 data_select$Attrition_Flag <- as.factor(data_select$Attrition_Flag)
 data_select<-c("Attrition_Flag","Customer_Age","Dependent_count","Months_on_book","Total_Relationship_Count","Months_Inactive_12_mon","Contacts_Count_12_mon","Credit_Limit","Total_Revolving_Bal","Avg_Open_To_Buy","Total_Amt_Chng_Q4","Total_Trans_Amt","Total_Trans_Ct","Total_Ct_Chng_Q4_Q1","Avg_Utilization_Ratio")
 data_select<-as.factor(data_select)
 simple.model <- glm(Attrition_Flag ~1, data = data_select, family = binomial)
 summary(simple.model)
-
-
 
 
 #Echantillonnage pour plus tard
@@ -963,8 +958,6 @@ sample_quit<-sample(1:dim(data_quit)[1],1000)
 sample_Stay<-sample(1:dim(data_stay)[1],1000)
 data_reg<-rbind(data_quit[sample_quit,],data_stay[sample_Stay,])
 table(data_reg$Attrition_Flag)
-
-
 
 # Graphique I des corrélations entre chacune des variables
 # data %>% select(where(is.numeric)) %>%
@@ -998,16 +991,8 @@ as.matrix(data.frame(cor_spearman)) %>%
 #  pour nous aider a trouver les perimetres de nos modeles (il y en aura surement pls)
 
 
-
-
-
-
-
 # variable dependante Y = départ ou non : attrition_flag
 # variable qualitative donc on fera une régression logistique
-
-
-
 
 
 # variable explicatives
