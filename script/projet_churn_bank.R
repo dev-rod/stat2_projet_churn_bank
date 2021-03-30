@@ -122,6 +122,9 @@ data <- read.csv("data/BankChurners.csv", sep = ",")
 #   - Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_2
 data <- data[, -c(1, 22, 23)]
 
+##### 20 colonnes restantes
+length (colnames(data))
+
 ##### Vérification des valeurs nulles
 summary(data)
 # pas de valeurs nulles (NA)
@@ -135,16 +138,15 @@ str(data)
 
 ##### la variable explicative : Attrition_Flag ( Factor )
 # C'est une vartiable qualitative, le modele a utiliser est donc une regression logistique=> regression logistique
-
 summary(data)
 print (skim(data))
 
 # ---les  variables qualitatives
 # 1 Card_Category           : Factor
-# 3 Gender                  : Factor
-# 4 Education_Level         : Factor
-# 5 Marital_Status          : Factor
-# 6 Income_Category         : Factor
+# 2 Gender                  : Factor
+# 3 Education_Level         : Factor
+# 4 Marital_Status          : Factor
+# 5 Income_Category         : Factor
 
 #--- les 14 variables quantitatives
 # 1- Months_on_book          : int
@@ -156,14 +158,11 @@ print (skim(data))
 # 7- Avg_Open_To_Buy         : num
 # 8- Total_Amt_Chng_Q4_Q1    : num
 # 9- Total_Trans_Amt         : int
-# 10- Total_Trans_Ct          : int
-# 11- Total_Ct_Chng_Q4_Q1     : num
-# 12- Avg_Utilization_Ratio   : num
-# 13- Customer_Age            : int
-# 14- Dependent_count         : int
-
-# 20 colonnes restantes
-length (colnames(data))
+# 10- Total_Trans_Ct         : int
+# 11- Total_Ct_Chng_Q4_Q1    : num
+# 12- Avg_Utilization_Ratio  : num
+# 13- Customer_Age           : int
+# 14- Dependent_count        : int
 
 ##################################################################################-
 # 3 - Analyse exploratoire des données (EDA)  ####
@@ -173,7 +172,6 @@ length (colnames(data))
 ### Séparation des clients :  ceux qui ont quitté la banque de ceux qui sont restés
 
 ####  modification Attrition_Flag : 0 Existing Customer, 1 Attrited Customer ----
-
 data$Attrition_Flag<-as.character(data$Attrition_Flag)
 data$Attrition_Flag[data$Attrition_Flag=="Existing Customer"]<-0
 data$Attrition_Flag[data$Attrition_Flag=="Attrited Customer"]<-1
@@ -183,33 +181,28 @@ data$Attrition_Flag <- as_factor(data$Attrition_Flag)
 
 # Attrition_Flag
 data$Attrition_Flag <- as_factor(data$Attrition_Flag)
-
 # Gender
 data$Gender <- as_factor(data$Gender)
-
 # Education_Level
 data$Education_Level <- as_factor(data$Education_Level)
 # réordonnancement par niveaux de diplome croissant
 data$Education_Level <- fct_relevel(data$Education_Level, "Unknown", "Uneducated", "High School", "College", "Graduate", "Post-Graduate", "Doctorate")
-
 # Marital_Status
 data$Marital_Status <- as_factor(data$Marital_Status)
 # réordonnancement par statut marital
 data$Marital_Status <- fct_relevel(data$Marital_Status, "Unknown", "Single", "Married", "Divorced")
-
-# Income_Category
+# Income_Category 
 data$Income_Category <- as_factor(data$Income_Category)
 # réordonnancement par niveaux de revenu croissant
 data$Income_Category <- fct_relevel(data$Income_Category, "Unknown", "Less than $40K", "$40K - $60K", "$60K - $80K", "$80K - $120K", "$120K +")
-
 # Card_Category
 data$Card_Category <- as_factor(data$Card_Category)
 # réordonnancement par categrie de carte de credit croissant
 data$Card_Category <- fct_relevel(data$Card_Category, "Blue", "Silver", "Gold", "Platinum")
 
-str(data)
-skim(data)
-
+# verif :
+# str(data)
+# skim(data)
 
 #### les deux datasets ----
 data_quit <- data[(data$Attrition_Flag) == 1, ]
@@ -218,13 +211,13 @@ str(data_quit)
 # 1627 obs.
 
 data_stay <- data[(data$Attrition_Flag) == 0, ]
-
 skim(data_stay)
 str(data_stay)
-
+# 8500 obs.
 
 ### 3.1 - Analyses des 5 variables qualitatives ### ----
 
+#  attacher "data" c'est a dire eviter de retaper data$ au debut de chaque variable  
 attach(data)
 
 #### Gender ####
@@ -292,7 +285,7 @@ data_stay %>%
     labs(title = "Distribution par genre",
          x = "Existing Customer", y = "NB")
 
-# Resultats variable Gender ----
+##### Resultats variable Gender ----
     # parmi Existing Customer "0.521" soit 52.1 % 
     # Attrited Customers : "0.572" soit 57.2 %
     # 57 % des personnes aant fermées leur compte sont des femmes tandis que 52 % des clients de la 
@@ -300,7 +293,7 @@ data_stay %>%
 
 
 #### Marital_Status #### 
-#####frequences des modalités en fonction de l'Attrition_Flag ----
+##### frequences des modalités en fonction de l'Attrition_Flag ----
 
 # Les modalités
 # unique (Marital_Status)
@@ -828,132 +821,606 @@ data_stay %>%
 #####Les resultats par niveau d'education (Education_Level) ----
 #  en fonction du niveau d'etude on voit une legere différence de proportion parmi les abonnées ou les desabonnés.
 # Il semble que le niveau d'etude relativement élevé (graduate, post graduate et doctorate) facilite de depart de la banque.
-# parmi les " unknox on trouve une tres legere surrepresentation des desabonnés
+# parmi les " unknow on trouve une tres legere surrepresentation des desabonnés
 
 # ---------------------------------------------------
 ### 3.3 LES 14 VARIABLES QUANTITATIVES ----
 
-#Echantillonnage pour plus tard
-data_quit<-data[(data$Attrition_Flag)=="Quit",]
-data_stay<-data[(data$Attrition_Flag)=="Stay",]
+#### Echantillonnage avec 1000 obs de chaque population (1000 restant et 1000 partant) ----
 sample_quit<-sample(1:dim(data_quit)[1],1000)
 sample_Stay<-sample(1:dim(data_stay)[1],1000)
 data_reg<-rbind(data_quit[sample_quit,],data_stay[sample_Stay,])
-table(data_reg$Attrition_Flag)
+skim(data_reg)
 
-## Analyses visuelles 
+#### les deux datasets avec 1000 obs ----
+# data_reg_quit
+data_reg_quit <- data_reg[(data_reg$Attrition_Flag) == 1, ]
+skim(data_reg_quit)
+str(data_reg_quit)
+# data_reg_stay 
+data_reg_stay <- data_reg[(data_reg$Attrition_Flag) == 0, ]
+skim(data_reg_stay)
+str(data_reg_stay)
 
-#### Customer_Age #### 
+#### COMPARAISON DES DEUX POPULATIONS
+# les effectifs sont différentS on procede par comparaison de moyenne => Test de Student ou de Wilcoxon
+# La fonction rquery_t_test.r permet de verifier si toutes les conditions sont remplies pour le test de Student
+# si les deux populations ne suivent pas la distribution normales alors il est indiqué qu 'il faut faire le test de wilcoxon
+# source('http://www.sthda.com/upload/rquery_t_test.r')
+# rquery.t.test(x, y = NULL, paired = FALSE, graph = TRUE, ...)
+# STUDENT  : Comparaison des moyennes des deux populations via la fonction rquery_t_test 
+source('http://www.sthda.com/upload/rquery_t_test.r')
 
-#  histogramme
-hist(data_stay$Customer_Age)
-hist(data_quit$Customer_Age)
 
-# stat descriptives
-summary(data_stay$Customer_Age)
-# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 26.00   41.00   46.00   46.26   52.00   73.00 
-summary(data_quit$Customer_Age)
-# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 26.00   41.00   47.00   46.66   52.00   68.00 
+### Pour chaque variables quantitatives  :----
+# + analyse visuelle : 
+    # histogramme de chaque population
+    # boxplot variable en fonction de Attrition_Flag
+    # plot de la variable par attrtion_flag
+# + statistiques descriptives des deux echantillons: Min.,1st Qu.,Median,Mean,3rd Qu.,Max.
+# + rquery_t_test  => qui donne le resultat du test si l ensemble des critères est respecté
+# + test wilcoxon si l un des deux echantillons ne respecte pas la loi normale
+ 
+#### 01 Customer_Age ----
 
-#  variances
-var(data_stay$Customer_Age)
-# 65.30509
-# var(data_quit$Customer_Age)
-# 58.76221
-
-#  Customer_Age selon l' Attrition_Flag
+# analyse visuelle :
+    # histogramme de chaque population
+hist(data_reg_stay$Customer_Age)
+hist(data_reg_quit$Customer_Age)
+    #boxplot  Customer_Age selon l Attrition_Flag
 boxplot(Customer_Age ~ Attrition_Flag)
-plot_Custumer_Age <-
+    # plot de Customer_Age par attrition_flag
+plot_Customer_Age <-
     data %>% ggplot(aes(x = Customer_Age, fill = Attrition_Flag)) +
     geom_density(alpha = 0.7) +
-    scale_fill_manual(values = c('#3C3838', '#338076'), name = '') +
+    scale_fill_manual(values = c('black', 'white'), name ='') +
     theme_classic() +
-    labs(title = 'Customer_Age by flag') +
+    labs(title = 'Customer_Age by Attrition_Flag') +
     theme(legend.position = 'bottom')
 plot_Custumer_Age
 
-# test de normalité 
-# les histogramme montre une distribution qui suit la loi normale
+# stat descriptives
+summary(data_stay$Customer_Age)
+    # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    # 26.00   41.00   46.00   46.26   52.00   73.00 
+summary(data_quit$Customer_Age)
+    # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    # 26.00   41.00   47.00   46.66   52.00   68.00 
+#  variances
+var(data_stay$Customer_Age)
+    # 65.30509
+var(data_quit$Customer_Age)
+    # 58.76221
+# STUDENT
+rquery.t.test(data_reg_quit$Customer_Age, data_reg_stay$Customer_Age)
+# => Use a non parametric test like Wilcoxon test.
+# WILCOXON
+wilcox.test(data_reg_quit$Customer_Age, data_reg_stay$Customer_Age)
+# W = 511132, p-value = 0.3884 => Les deux échantillons  ne sont pas significativement différents.
 
-#  test d'egalités des variances
-summary(aov(data_quit$Customer_Age~data_stay$Customer_Age))
+#### 02 Dependent_count ----
+# analyse visuelle :
+# histogramme de chaque population
+hist(data_reg_stay$Dependent_count)
+hist(data_reg_quit$Dependent_count)
+#boxplot  Dependent_count selon l Attrition_Flag
+boxplot(Dependent_count ~ Attrition_Flag)
+# plot de Dependent_count par attrition_flag
+plot_Dependent_count <-
+    data %>% ggplot(aes(x = Dependent_count, fill = Attrition_Flag)) +
+    geom_density(alpha = 0.7) +
+    scale_fill_manual(values = c('black', 'white'), name ='') +
+    theme_classic() +
+    labs(title = 'Dependent_count by Attrition_Flag') +
+    theme(legend.position = 'bottom')
+plot_Dependent_count
 
-#  test de student
-t.test(data_stay$Customer_Age~data_quit$Customer_Age,var.equal=TRUE)
+# stat descriptives
+summary(data_stay$Dependent_count)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.000   1.000   2.000   2.335   3.000   5.000 
+summary(data_quit$Dependent_count)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.000   2.000   2.000   2.403   3.000   5.000 
+#  variances
+var(data_stay$Dependent_count)
+# [1] 1.698405
+var(data_quit$Dependent_count)
+# [1] 1.625651
+
+# STUDENT
+rquery.t.test(data_reg_quit$Dependent_count, data_reg_stay$Dependent_count)
+# => Use a non parametric test like Wilcoxon test.
+# WILCOXON
+wilcox.test(data_reg_quit$Dependent_count, data_reg_stay$Dependent_count)
+# W = 513114, p-value = 0.2975 => Les deux échantillons  ne sont pas significativement différents.
 
 
-#### Months_on_book #### 
-hist(Months_on_book)
+#### 03 Months_on_book ----
+# analyse visuelle : 
+# histogramme de chaque population
+hist(data_reg_stay$Months_on_book)
+hist(data_reg_quit$Months_on_book)
+#boxplot  Months_on_book selon l Attrition_Flag
 boxplot(Months_on_book ~ Attrition_Flag)
+# plot de Months_on_book par attrition_flag
+plot_Months_on_book <-
+    data %>% ggplot(aes(x = Months_on_book, fill = Attrition_Flag)) +
+    geom_density(alpha = 0.7) +
+    scale_fill_manual(values = c('black', 'white'), name ='') +
+    theme_classic() +
+    labs(title = 'Months_on_book by Attrition_Flag') +
+    theme(legend.position = 'bottom')
+plot_Months_on_book
+
+# stat descriptives
+summary(data_stay$Months_on_book)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 13.00   31.00   36.00   35.88   40.00   56.00 
+summary(data_quit$Months_on_book)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 13.00   32.00   36.00   36.18   40.00   56.00 
+#  variances
+var(data_stay$Months_on_book)
+# [1] 64.34943
+var(data_quit$Months_on_book)
+# [1] 60.78617
+
+# STUDENT
+rquery.t.test(data_reg_quit$Months_on_book, data_reg_stay$Months_on_book)
+# => Use a non parametric test like Wilcoxon test.
+# WILCOXON
+wilcox.test(data_reg_quit$Months_on_book, data_reg_stay$Months_on_book)
+# W = 509041, p-value = 0.4808 => Les deux échantillons ne sont pas significativement différents.
+
+#### 04 Total_Relationship_Count ----
+# analyse visuelle : 
+# histogramme de chaque population
+hist(data_reg_stay$Total_Relationship_Count)
+hist(data_reg_quit$Total_Relationship_Count)
+#boxplot  Total_Relationship_Count selon l Attrition_Flag
+boxplot(Total_Relationship_Count ~ Attrition_Flag)
+# plot de Total_Relationship_Count par attrition_flag
+plot_Total_Relationship_Count <-
+    data %>% ggplot(aes(x = Total_Relationship_Count, fill = Attrition_Flag)) +
+    geom_density(alpha = 0.7) +
+    scale_fill_manual(values = c('black', 'white'), name ='') +
+    theme_classic() +
+    labs(title = 'Total_Relationship_Count by Attrition_Flag') +
+    theme(legend.position = 'bottom')
+plot_Total_Relationship_Count
+
+# stat descriptives
+summary(data_stay$Total_Relationship_Count)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 1.000   3.000   4.000   3.915   5.000   6.000 
+summary(data_quit$Total_Relationship_Count)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 1.00    2.00    3.00    3.28    5.00    6.00 
+var(data_stay$Total_Relationship_Count)
+# 1] 2.337686
+var(data_quit$Total_Relationship_Count)
+# [1] 2.489395
+
+# STUDENT
+rquery.t.test(data_reg_quit$Total_Relationship_Count, data_reg_stay$Total_Relationship_Count)
+# => Use a non parametric test like Wilcoxon test.
+# WILCOXON
+wilcox.test(data_reg_quit$Total_Relationship_Count, data_reg_stay$Total_Relationship_Count)
+# W = 374438, p-value < 2.2e-16 => Les deux échantillons sont significativement différents.
+
+#### 05 Months_Inactive_12_mon ----
+# analyse visuelle : 
+# histogramme de chaque population
+hist(data_reg_stay$Months_Inactive_12_mon)
+hist(data_reg_quit$Months_Inactive_12_mon)
+#boxplot  Months_Inactive_12_mon selon l Attrition_Flag
+boxplot(Months_Inactive_12_mon ~ Attrition_Flag)
+# plot de Months_Inactive_12_mon par attrition_flag
+plot_Months_Inactive_12_mon <-
+    data %>% ggplot(aes(x = Months_Inactive_12_mon, fill = Attrition_Flag)) +
+    geom_density(alpha = 0.7) +
+    scale_fill_manual(values = c('black', 'white'), name ='') +
+    theme_classic() +
+    labs(title = 'Months_Inactive_12_mon by Attrition_Flag') +
+    theme(legend.position = 'bottom')
+plot_Months_Inactive_12_mon
+# stat descriptives
+summary(data_stay$Months_Inactive_12_mon)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#  0.000   1.000   2.000   2.274   3.000   6.000 
+summary(data_quit$Months_Inactive_12_mon)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.000   2.000   3.000   2.693   3.000   6.000 
+var(data_stay$Months_Inactive_12_mon)
+# [1] 1.033763
+var(data_quit$Months_Inactive_12_mon)
+# 1] 0.8093216
+
+# STUDENT
+rquery.t.test(data_reg_quit$Months_Inactive_12_mon, data_reg_stay$Months_Inactive_12_mon)
+# => Use a non parametric test like Wilcoxon test.
+# WILCOXON
+wilcox.test(data_reg_quit$Months_Inactive_12_mon, data_reg_stay$Months_Inactive_12_mon)
+# W = 634140, p-value < 2.2e-16 => Les deux échantillons sont significativement différents.
 
 
-barplot(table(data$Months_on_book[data$Attrition_Flag == 0]))
-barplot(table(data$Months_on_book[data$Attrition_Flag == 1]))
-
-#### Total_Relationship_Count #### 
-hist(Months_on_book)
-barplot(Contacts_Count_12_mon)
-boxplot(Months_on_book ~ Attrition_Flag)
-#### Months_Inactive_12_mon #### 
-
-
-
-#### Contacts_Count_12_mon#### 
-hist(Contacts_Count_12_mon)
+#### 06 Contacts_Count_12_mon ---- 
+# analyse visuelle : 
+# histogramme de chaque population
+hist(data_reg_stay$Contacts_Count_12_mon)
+hist(data_reg_quit$Contacts_Count_12_mon)
+#boxplot  Contacts_Count_12_mon selon l Attrition_Flag
 boxplot(Contacts_Count_12_mon ~ Attrition_Flag)
-
+# plot de Contacts_Count_12_mon par attrition_flag
 plot_Contacts_Count_12_mon <-
     data %>% ggplot(aes(x = Contacts_Count_12_mon, fill = Attrition_Flag)) +
-    geom_density(alpha = 0.1) +
-    scale_fill_manual(values = c('#3C3338', '#338076'), name = '') +
+    geom_density(alpha = 0.7) +
+    scale_fill_manual(values = c('black', 'white'), name ='') +
     theme_classic() +
-    labs(title = 'Total Transaction Count (Last 12 months) by flag') +
+    labs(title = 'Contacts_Count_12_mon by Attrition_Flag') +
     theme(legend.position = 'bottom')
 plot_Contacts_Count_12_mon
-#### Credit_Limit ----
-hist(Credit_Limit)
+# stat descriptives
+summary(data_stay$Contacts_Count_12_mon)
+summary(data_quit$Contacts_Count_12_mon)
+var(data_stay$Contacts_Count_12_mon)
+var(data_quit$Contacts_Count_12_mon)
+# summary(data_stay$Contacts_Count_12_mon)
+# # Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+# # 0.000   2.000   2.000   2.356   3.000   5.000
+# summary(data_quit$Contacts_Count_12_mon)
+# # Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+# # 0.000   2.000   3.000   2.972   4.000   6.000
+# var(data_stay$Contacts_Count_12_mon)
+# 1.169503
+# var(data_quit$Contacts_Count_12_mon)
+# 1.189271
+
+# STUDENT
+rquery.t.test(data_reg_quit$Contacts_Count_12_mon, data_reg_stay$Contacts_Count_12_mon)
+# => Use a non parametric test like Wilcoxon test.
+wilcox.test(data_reg_quit$Contacts_Count_12_mon, data_reg_stay$Contacts_Count_12_mon)
+# W = 662803, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
+
+#### 07 Credit_Limit ---- 
+# analyse visuelle : 
+# histogramme de chaque population
+hist(data_reg_stay$Credit_Limit)
+hist(data_reg_quit$Credit_Limit)
+#boxplot  Credit_Limit selon l Attrition_Flag
 boxplot(Credit_Limit ~ Attrition_Flag)
-#### Total_Revolving_Bal #### 
-hist(Total_Revolving_Bal)
+# plot de Credit_Limit par attrition_flag
+plot_Credit_Limit <-
+    data %>% ggplot(aes(x = Credit_Limit, fill = Attrition_Flag)) +
+    geom_density(alpha = 0.7) +
+    scale_fill_manual(values = c('black', 'white'), name ='') +
+    theme_classic() +
+    labs(title = 'Credit_Limit by Attrition_Flag') +
+    theme(legend.position = 'bottom')
+plot_Credit_Limit
+# stat descriptives
+summary(data_stay$Credit_Limit)
+summary(data_quit$Credit_Limit)
+var(data_stay$Credit_Limit)
+var(data_quit$Credit_Limit)
+
+# summary(data_stay$Credit_Limit)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 1438    2602    4644    8727   11253   34516 
+# > summary(data_quit$Credit_Limit)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 1438    2114    4178    8136    9934   34516 
+# var(data_stay$Credit_Limit)
+# [1] 82536676
+# var(data_quit$Credit_Limit)
+# [1] 82725102
+
+# STUDENT
+rquery.t.test(data_reg_quit$Credit_Limit, data_reg_stay$Credit_Limit)
+# => Use a non parametric test like Wilcoxon test.
+# WILCOXON
+wilcox.test(data_reg_quit$Credit_Limit, data_reg_stay$Credit_Limit)
+# W = 465106, p-value = 0.006881=> Les deux échantillons  ne sont pas significativement différents.
+
+#### 08 Total_Revolving_Bal ----
+# analyse visuelle : 
+# histogramme de chaque population
+hist(data_reg_stay$Total_Revolving_Bal)
+hist(data_reg_quit$Total_Revolving_Bal)
+#boxplot  Total_Revolving_Bal selon l Attrition_Flag
 boxplot(Total_Revolving_Bal ~ Attrition_Flag)
-#### Avg_Open_To_Buy #### 
-hist(Avg_Open_To_Buy)
+# plot de Total_Revolving_Bal par attrition_flag
+plot_Total_Revolving_Bal <-
+    data %>% ggplot(aes(x = Total_Revolving_Bal, fill = Attrition_Flag)) +
+    geom_density(alpha = 0.7) +
+    scale_fill_manual(values = c('black', 'white'), name ='') +
+    theme_classic() +
+    labs(title = 'Total_Revolving_Bal by Attrition_Flag') +
+    theme(legend.position = 'bottom')
+plot_Total_Revolving_Bal
+# stat descriptives
+summary(data_stay$Total_Revolving_Bal)
+summary(data_quit$Total_Revolving_Bal)
+var(data_stay$Total_Revolving_Bal)
+var(data_quit$Total_Revolving_Bal)
+# summary(data_stay$Total_Revolving_Bal)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0     800    1364    1257    1807    2517 
+# summary(data_quit$Total_Revolving_Bal)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.0     0.0     0.0   672.8  1303.5  2517.0 
+# var(data_stay$Total_Revolving_Bal)
+# [1] 574178
+# var(data_quit$Total_Revolving_Bal)
+# [1] 848951.4
+
+# STUDENT
+rquery.t.test(data_reg_quit$Total_Revolving_Bal, data_reg_stay$Total_Revolving_Bal)
+# => Use a non parametric test like Wilcoxon test.
+# WILCOXON
+wilcox.test(data_reg_quit$Total_Revolving_Bal, data_reg_stay$Total_Revolving_Bal)
+# W = 324850, p-value < 2.2e-16=> Les deux échantillons  sont  significativement différents.
+
+#### 09 Avg_Open_To_Buy   ----  
+# analyse visuelle : 
+# histogramme de chaque population
+hist(data_reg_stay$Avg_Open_To_Buy)
+hist(data_reg_quit$Avg_Open_To_Buy)
+#boxplot  Avg_Open_To_Buy selon l Attrition_Flag
 boxplot(Avg_Open_To_Buy ~ Attrition_Flag)
-#### Total_Amt_Chng_Q4_Q1 #### 
-hist(Total_Amt_Chng_Q4_Q1)
+# plot de Avg_Open_To_Buy par attrition_flag
+plot_Avg_Open_To_Buy <-
+    data %>% ggplot(aes(x = Avg_Open_To_Buy, fill = Attrition_Flag)) +
+    geom_density(alpha = 0.7) +
+    scale_fill_manual(values = c('black', 'white'), name ='') +
+    theme_classic() +
+    labs(title = 'Avg_Open_To_Buy by Attrition_Flag') +
+    theme(legend.position = 'bottom')
+plot_Avg_Open_To_Buy
+# stat descriptives
+summary(data_stay$Avg_Open_To_Buy)
+summary(data_quit$Avg_Open_To_Buy)
+var(data_stay$Avg_Open_To_Buy)
+var(data_quit$Avg_Open_To_Buy)
+
+# > summary(data_stay$Avg_Open_To_Buy)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 15    1184    3470    7470    9978   34516 
+# > summary(data_quit$Avg_Open_To_Buy)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 3    1587    3488    7463    9258   34516 
+# > var(data_stay$Avg_Open_To_Buy)
+# [1] 82585780
+# > var(data_quit$Avg_Open_To_Buy)
+# [1] 82977673
+
+# STUDENT
+rquery.t.test(data_reg_quit$Avg_Open_To_Buy, data_reg_stay$Avg_Open_To_Buy)
+# => Use a non parametric test like Wilcoxon test.
+# WILCOXON
+wilcox.test(data_reg_quit$Avg_Open_To_Buy, data_reg_stay$Avg_Open_To_Buy)
+# W = 521333, p-value = 0.09853 => Les deux échantillons  ne sont pas significativement différents.
+
+
+#### 10 Total_Amt_Chng_Q4_Q1 ----
+
+# analyse visuelle : 
+# histogramme de chaque population
+hist(data_reg_stay$Total_Amt_Chng_Q4_Q1)
+hist(data_reg_quit$Total_Amt_Chng_Q4_Q1)
+#boxplot  Total_Amt_Chng_Q4_Q1 selon l Attrition_Flag
 boxplot(Total_Amt_Chng_Q4_Q1 ~ Attrition_Flag)
-#### Total_Trans_Amt ----
-hist(Total_Trans_Ct)
+# plot de Total_Amt_Chng_Q4_Q1 par attrition_flag
+plot_Total_Amt_Chng_Q4_Q1 <-
+    data %>% ggplot(aes(x = Total_Amt_Chng_Q4_Q1, fill = Attrition_Flag)) +
+    geom_density(alpha = 0.7) +
+    scale_fill_manual(values = c('black', 'white'), name ='') +
+    theme_classic() +
+    labs(title = 'Total_Amt_Chng_Q4_Q1 by Attrition_Flag') +
+    theme(legend.position = 'bottom')
+plot_Total_Amt_Chng_Q4_Q1
+# stat descriptives
+summary(data_stay$Total_Amt_Chng_Q4_Q1)
+summary(data_quit$Total_Amt_Chng_Q4_Q1)
+var(data_stay$Total_Amt_Chng_Q4_Q1)
+var(data_quit$Total_Amt_Chng_Q4_Q1)
+
+# > # stat descriptives
+#     > summary(data_stay$Total_Amt_Chng_Q4_Q1)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.2560  0.6430  0.7430  0.7725  0.8600  3.3970 
+# > summary(data_quit$Total_Amt_Chng_Q4_Q1)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.0000  0.5445  0.7010  0.6943  0.8560  1.4920 
+# > var(data_stay$Total_Amt_Chng_Q4_Q1)
+# [1] 0.04742953
+# > var(data_quit$Total_Amt_Chng_Q4_Q1)
+# # [1] 0.04619247
+
+# STUDENT
+rquery.t.test(data_reg_quit$Total_Amt_Chng_Q4_Q1, data_reg_stay$Total_Amt_Chng_Q4_Q1)
+# => Use a non parametric test like Wilcoxon test.
+# WILCOXON  
+wilcox.test(data_reg_quit$Total_Amt_Chng_Q4_Q1, data_reg_stay$Total_Amt_Chng_Q4_Q1)
+# W = 414090, p-value = 2.874e-11=> Les deux échantillons sont significativement différents.
+
+#### 11 Total_Trans_Amt ----
+
+# analyse visuelle : 
+# histogramme de chaque population
+hist(data_reg_stay$Total_Trans_Amt)
+hist(data_reg_quit$Total_Trans_Amt)
+#boxplot  Total_Trans_Amt selon l Attrition_Flag
+boxplot(Total_Trans_Amt ~ Attrition_Flag)
+# plot de Total_Trans_Amt par attrition_flag
+plot_Total_Trans_Amt<-
+    data %>% ggplot(aes(x = Total_Trans_Amt, fill = Attrition_Flag)) +
+    geom_density(alpha = 0.7) +
+    scale_fill_manual(values = c('black', 'white'), name ='') +
+    theme_classic() +
+    labs(title = 'Total_Trans_Amt by Attrition_Flag') +
+    theme(legend.position = 'bottom')
+plot_Total_Trans_Amt
+# stat descriptives
+summary(data_stay$Total_Trans_Amt)
+summary(data_quit$Total_Trans_Amt)
+var(data_stay$Total_Trans_Amt)
+var(data_quit$Total_Trans_Amt)
+
+# STUDENT
+rquery.t.test(data_reg_quit$Total_Trans_Amt, data_reg_stay$Total_Trans_Amt)
+# => Use a non parametric test like Wilcoxon test.
+# WILCOXON  
+wilcox.test(data_reg_quit$Total_Trans_Amt, data_reg_stay$Total_Trans_Amt)
+# W = 345364, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
+
+#### 12 Total_Trans_Ct ----
+
+# analyse visuelle : 
+# histogramme de chaque population
+hist(data_reg_stay$Total_Trans_Ct)
+hist(data_reg_quit$Total_Trans_Ct)
+#boxplot  Total_Trans_Ct selon l Attrition_Flag
 boxplot(Total_Trans_Ct ~ Attrition_Flag)
-#### Total_Trans_Ct #### 
-
-hist(Total_Trans_Ct)
-boxplotTotal_Trans_Ct( ~ Attrition_Flag)
-
-plot_Total_Trans_Ct <-
+# plot de Total_Trans_Ct par attrition_flag
+plot_Total_Trans_Ct<-
     data %>% ggplot(aes(x = Total_Trans_Ct, fill = Attrition_Flag)) +
     geom_density(alpha = 0.7) +
-    scale_fill_manual(values = c('#3C3838', '#338076'), name = '') +
+    scale_fill_manual(values = c('black', 'white'), name ='') +
     theme_classic() +
-    labs(title = 'Total Transaction Count (Last 12 months) by flag') +
+    labs(title = 'Total_Trans_Ct by Attrition_Flag') +
     theme(legend.position = 'bottom')
 plot_Total_Trans_Ct
-#### Total_Ct_Chng_Q4_Q1 ----
-hist(Total_Ct_Chng_Q4_Q1)
+# stat descriptives
+summary(data_stay$Total_Trans_Ct)
+summary(data_quit$Total_Trans_Ct)
+var(data_stay$Total_Trans_Ct)
+var(data_quit$Total_Trans_Ct)
+# stat descriptives
+#     > summary(data_stay$Total_Trans_Ct)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 11.00   54.00   71.00   68.67   82.00  139.00 
+# > summary(data_quit$Total_Trans_Ct)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 10.00   37.00   43.00   44.93   51.00   94.00 
+# > var(data_stay$Total_Trans_Ct)
+# [1] 525.2811
+# > var(data_quit$Total_Trans_Ct)
+# [1] 212.2391
+
+# STUDENT
+rquery.t.test(data_reg_quit$Total_Trans_Ct, data_reg_stay$Total_Trans_Ct)
+# => Use a non parametric test like Wilcoxon test.
+# WILCOXON
+wilcox.test(data_reg_quit$Total_Trans_Ct, data_reg_stay$Total_Trans_Ct)
+# W = 225446, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
+
+#### 13 Total_Ct_Chng_Q4_Q1 ---- 
+# analyse visuelle : 
+# histogramme de chaque population
+hist(data_reg_stay$Total_Ct_Chng_Q4_Q1)
+hist(data_reg_quit$Total_Ct_Chng_Q4_Q1)
+#boxplot  Total_Ct_Chng_Q4_Q1 selon l Attrition_Flag
 boxplot(Total_Ct_Chng_Q4_Q1 ~ Attrition_Flag)
-#### Avg_Utilization_Ratio #### 
-hist(Avg_Utilization_Ratio)
+# plot de Total_Ct_Chng_Q4_Q1 par attrition_flag
+plot_Total_Ct_Chng_Q4_Q1<-
+    data %>% ggplot(aes(x = Total_Ct_Chng_Q4_Q1, fill = Attrition_Flag)) +
+    geom_density(alpha = 0.7) +
+    scale_fill_manual(values = c('black', 'white'), name ='') +
+    theme_classic() +
+    labs(title = 'Total_Ct_Chng_Q4_Q1 by Attrition_Flag') +
+    theme(legend.position = 'bottom')
+plot_Total_Ct_Chng_Q4_Q1
+# stat descriptives
+summary(data_stay$Total_Ct_Chng_Q4_Q1)
+summary(data_quit$Total_Ct_Chng_Q4_Q1)
+var(data_stay$Total_Ct_Chng_Q4_Q1)
+var(data_quit$Total_Ct_Chng_Q4_Q1)
+
+# > # stat descriptives
+#     > summary(data_stay$Total_Ct_Chng_Q4_Q1)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.0280  0.6170  0.7210  0.7424  0.8330  3.7140 
+# > summary(data_quit$Total_Ct_Chng_Q4_Q1)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.0000  0.4000  0.5310  0.5544  0.6920  2.5000 
+# > var(data_stay$Total_Ct_Chng_Q4_Q1)
+# [1] 0.05200885
+# > var(data_quit$Total_Ct_Chng_Q4_Q1)
+# [1] 0.05146261
+
+
+# STUDENT
+rquery.t.test(data_reg_quit$Total_Ct_Chng_Q4_Q1, data_reg_stay$Total_Ct_Chng_Q4_Q1)
+# => Use a non parametric test like Wilcoxon test.
+# WILCOXON  
+wilcox.test(data_reg_quit$Total_Ct_Chng_Q4_Q1, data_reg_stay$Total_Ct_Chng_Q4_Q1)
+# W = 263315, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
+#### 14 Avg_Utilization_Ratio ----
+# analyse visuelle : 
+# histogramme de chaque population
+hist(data_reg_stay$Avg_Utilization_Ratio)
+hist(data_reg_quit$Avg_Utilization_Ratio)
+#boxplot  Avg_Utilization_Ratio selon l Attrition_Flag
 boxplot(Avg_Utilization_Ratio ~ Attrition_Flag)
+# plot de Avg_Utilization_Ratio par attrition_flag
+plot_Avg_Utilization_Ratio<-
+    data %>% ggplot(aes(x = Avg_Utilization_Ratio, fill = Attrition_Flag)) +
+    geom_density(alpha = 0.7) +
+    scale_fill_manual(values = c('black', 'white'), name ='') +
+    theme_classic() +
+    labs(title = 'Avg_Utilization_Ratio by Attrition_Flag') +
+    theme(legend.position = 'bottom')
+plot_Avg_Utilization_Ratio
+# stat descriptives
+summary(data_stay$Avg_Utilization_Ratio)
+summary(data_quit$Avg_Utilization_Ratio)
+var(data_stay$Avg_Utilization_Ratio)
+var(data_quit$Avg_Utilization_Ratio)
+# > summary(data_stay$Avg_Utilization_Ratio)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.0000  0.0550  0.2110  0.2964  0.5292  0.9940 
+# > summary(data_quit$Avg_Utilization_Ratio)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.0000  0.0000  0.0000  0.1625  0.2310  0.9990 
+# > var(data_stay$Avg_Utilization_Ratio)
+# [1] 0.07429321
+# > var(data_quit$Avg_Utilization_Ratio)
+# [1] 0.06993783
+# STUDENT
+rquery.t.test(data_reg_quit$Avg_Utilization_Ratio, data_reg_stay$Avg_Utilization_Ratio)
+# => Use a non parametric test like Wilcoxon test.
+# WILCOXON
+wilcox.test(data_reg_quit$Avg_Utilization_Ratio, data_reg_stay$Avg_Utilization_Ratio)
+# W = 325727, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
 
-####  Dependent_count  #### 
-hist(Dependent_count)
-boxplot(Dependent_count ~ Attrition_Flag)
+# test de 2 graphes sur une seule feuille avec grid.arrange()
+p1 <- data %>%
+    select(Total_Trans_Ct,Attrition_Flag) %>%
+    ggplot(aes(x=Total_Trans_Ct,fill=Attrition_Flag)) +
+    geom_bar(alpha=0.4,position="dodge") +
+    labs(title="Distribution of Total Transaction Count by Customer type",
+         x="Total Transaction Count",y="Count")
+p2 <- data %>%
+    select(Total_Trans_Amt,Attrition_Flag) %>%
+    ggplot(aes(x=Total_Trans_Amt,fill=Attrition_Flag)) +
+    geom_density(alpha=0.4) +
+    labs(title="Distribution of Total Transaction Amount by Customer type",
+         x="Total Transaction Amount",y="Density")
+grid.arrange(p1, p2, nrow = 2)
 
-
-
-
+# Les 9 variables pour lequels les populations sont significativement différent :
+# Avg_Utilization_Ratio
+# Total_Ct_Chng_Q4_Q1
+# Total_Trans_Ct   
+# Total_Trans_Amt
+# Total_Amt_Chng_Q4_Q1
+# Total_Revolving_Bal
+# Months_Inactive_12_mon
+# Contacts_Count_12_mon
+# Total_Relationship_Count
+# ==> Ce sont probablement les variables les plus explicatives qur le depart ou non des clients.
 
 
 ### 3.4 CORRELATION ENTRE VARIABLE ----
