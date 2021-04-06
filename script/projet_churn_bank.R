@@ -80,9 +80,25 @@ if ("highcharter" %in% rownames(installed.packages()) == FALSE) {
 library(highcharter)
 
 # Tools for reordering and modifying factor levels  with Categorical Variables (Factors)
-if("forcats" %in% rownames(installed.packages()) == FALSE) {install.packages("forcats")};library(forcats)
+if("forcats" %in% rownames(installed.packages()) == FALSE) {install.packages("forcats",dependencies=TRUE)};library(forcats)
+# 
+if("skimr" %in% rownames(installed.packages()) == FALSE) {install.packages("skimr",dependencies=TRUE)};library(skimr)
+# stats
 
-# CONFLIT : confilt de select() entre les deux librairies
+# créer des graphiques prêts à être publiés (k-means...)
+if("ggpubr" %in% rownames(installed.packages()) == FALSE) {install.packages("ggpubr",dependencies=TRUE)};library(ggpubr)
+# Extraire et visualiser les résultats d’analyses de données multivariées (k-means...)
+if("factoextra" %in% rownames(installed.packages()) == FALSE) {install.packages("factoextra",dependencies=TRUE)};library(factoextra)
+# Surrogate Residuals for Ordinal and General Regression Models
+if("sure" %in% rownames(installed.packages()) == FALSE) {install.packages("sure",dependencies=TRUE)};library(sure)
+# Fonctions diverses pour les graphiques "Grid"(grilles)
+if("gridExtra" %in% rownames(installed.packages()) == FALSE) {install.packages("gridExtra",dependencies=TRUE)};library(gridExtra)
+
+# pour installer un nouveau package
+# install.packages("package_name", repos=c("http://rstudio.org/_packages",
+                                         # "http://cran.rstudio.com",dependencies=TRUE))
+
+# pour le probleme de CONFLIT de select() entre les deux librairies MASS et dplyr
 require(MASS)
 require(dplyr)
 # puis utiliser dplyr::select()
@@ -982,7 +998,9 @@ as.matrix(data.frame(cor_spearman)) %>%
                                  dataLabels = list(enabled = TRUE)))
 
 
-#----Faire des clusters (Kmeans /clusters de clients sui partent vs qui restent)
+
+
+#----Faire des clusters (Kmeans /clusters de clients qui partent vs qui restent) => RODRIGUE
 # https://www.datanovia.com/en/fr/blog/visualisation-du-clustering-k-means-dans-r-guide-etape-par-etape/
 
 #----faire une AFC
