@@ -1458,54 +1458,70 @@ ggplot(data, aes(x=Total_Revolving_Bal, y= Avg_Utilization_Ratio)) + geom_point(
 #----Faire des clusters (Kmeans /clusters de clients sui partent vs qui restent) => RODRIGUE
 # https://www.datanovia.com/en/fr/blog/visualisation-du-clustering-k-means-dans-r-guide-etape-par-etape/
 
-# # PCA KMEANS  trouvé sur Kaggle => en doc "who'sgonna churn?"
-# # => pb de library pour les fonction (tableGrob et "get_eigenvalue")
-# data_k <- data %>% mutate_if(is.factor,as.numeric)
-# # seed
-# set.seed(2)
-# # CLUSTERING USING KMEANS
-# res.km <- kmeans(scale(data_k[, -1]), 6, nstart = 25)
-# # DIMENSION REDUCTION USING PCA
-# res.pca <- prcomp(data_k[, -1],  scale = TRUE)
-# 
-# # Coordinates
-# ind.coord <- as.data.frame(get_pca_ind(res.pca)$coord)
-# 
-# # Add clusters obtained using the K-means algorithm
-# ind.coord$cluster <- factor(res.km$cluster)
-# 
-# # Add target from original dataset
-# ind.coord$target <- data$Attrition_Flag
-# pca_cluster <- ind.coord %>% group_by(target,cluster) %>% count() %>% as.data.frame()
-# percentage_total= pca_cluster %>% group_by(target) %>% summarise(per_tot=n/sum(n)*100)
-# pca_cluster <- cbind(pca_cluster,'%'=round(percentage_total$per_tot,1))
-# c2 <- table(pca_cluster)
-# View(c2)
-# 
-# 
-# # Percentage of variance explained by dimensions
-# eigenvalue <- round(get_eigenvalue(res.pca), 1)
-# 
-# # factoextra : Extract and Visualize the Results of Multivariate Data Analyses
-# variance.percent <- eigenvalue$variance.percent
-# 
-# c3 <- ggscatter(
-#     ind.coord, x = "Dim.1", y = "Dim.2",
-#     color = "cluster", palette = "npg", ellipse = TRUE, ellipse.type = "convex",
-#     size = 1.5,  legend = "right", ggtheme = theme_bw(),
-#     xlab = paste0("Dim 1 (", variance.percent[1], "% )" ),
-#     ylab = paste0("Dim 2 (", variance.percent[2], "% )" )
-# ) +
-#     stat_mean(aes(color = cluster), size = 4) +
-#     theme_classic() +
-#     theme(legend.position='top')
-# 
-# 
-# grid.arrange(c2,c3,ncol=2,
-#              top=textGrob("Kmeans cluster and PCA",
-#                           gp=gpar(fontsize=18,font=1)))
+data_k <- data %>% mutate_if(is.factor,as.numeric)
+data_k
+# seed
+set.seed(123)
+# Retrait du taux d'attrition & CLUSTERING en 6 groupes avec KMEANS
+res.km <- kmeans(scale(data_k[, -1]), 6, nstart = 25)
+# RÉDUCTION DE DIMENSION À L'AIDE DU PCA
+# Réduction de chacune des 23 variables quantitatives à 23 groupe/dimension en utilisant l'ACP(prcomp)
+res.pca <- prcomp(data_k[, -1], scale = TRUE)
 
-# CONCLUSION DI NOTEBOOK 
+# Coordonnées des individus
+ind.coord <- as.data.frame(factoextra::get_pca_ind(res.pca)$coord)
+
+# Ajouter des clusters obtenus à l'aide de l'algorithme K-means
+ind.coord$cluster <- factor(res.km$cluster)
+
+# Ajout de la variable cible à partir de l'ensemble de données d'origine
+ind.coord$target <- data$Attrition_Flag
+
+pca_cluster <- ind.coord %>%
+    group_by(target, cluster) %>%
+    count() %>%
+    as.data.frame()
+
+percentage_total <- pca_cluster %>%
+    group_by(target) %>%
+    summarise(per_tot=n/sum(n)*100)
+
+pca_cluster <- cbind(pca_cluster,'%'=round(percentage_total$per_tot,1))
+
+c2 <- tableGrob(pca_cluster)
+
+c3 <- ggscatter(
+    ind.coord, x = "Dim.1", y = "Dim.2",
+    color = "cluster", palette = "npg", ellipse = TRUE, ellipse.type = "convex",
+    size = 1.5,  legend = "right", ggtheme = theme_bw(),
+    xlab = paste0("Dim 1 (", variance.percent[1], "% )" ),
+    ylab = paste0("Dim 2 (", variance.percent[2], "% )" )
+) +
+    stat_mean(aes(color = cluster), size = 4) +
+    theme_classic() +
+    theme(legend.position='top')
+
+# Percentage of variance explained by dimensions
+eigenvalue <- round(get_eigenvalue(res.pca), 1)
+
+variance.percent <- eigenvalue$variance.percent
+
+c3 <- ggscatter(
+    ind.coord, x = "Dim.1", y = "Dim.2",
+    color = "cluster", palette = "npg", ellipse = TRUE, ellipse.type = "convex",
+    size = 1.5,  legend = "right", ggtheme = theme_bw(),
+    xlab = paste0("Dim 1 (", variance.percent[1], "% )" ),
+    ylab = paste0("Dim 2 (", variance.percent[2], "% )" )
+) +
+    stat_mean(aes(color = cluster), size = 4) +
+    theme_classic() +
+    theme(legend.position='top')
+
+my_gp <- grid::gpar(fontsize=18, font=1)
+my_top <- grid::textGrob("Kmeans cluster and PCA", gp=my_gp)
+gridExtra::grid.arrange(c2, c3, ncol=2, top=my_top)
+
+# CONCLUSION
 
 # THe 5 top features of determing a customer's attrition:
 # Total Transaction Count
