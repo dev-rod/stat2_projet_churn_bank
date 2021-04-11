@@ -589,66 +589,65 @@ gridExtra::grid.arrange(c2, c3, ncol=2, top=my_top)
 intrain<-createDataPartition(data$Attrition_Flag,p=0.7,
                              list = F,
                              times = 1)
-# creation des datasets: testing (30%) & training (70%) pour minimiser le risque de surentraienemnt 
+# creation des datasets: testing (30%) & training (70%) pour minimiser le ridque de surentraienemnt 
 training <-data[intrain,]
 testing <-data[-intrain,]
 
 # ---- modification des classes lorsqu'il y a des trop fort desequilibres
 
-
 # # CLASSE => message d'erreur 
 
-# data_select<-data
+data_select<-data
 # #classe_marital_class
-# data_select[which(data_select$Marital_Status %in% c("Divorced","Single")),"Marital_Status"]<-"Single"
+data_select[which(data_select$Marital_Status %in% c("Divorced","Single")),"Marital_Status"]<-"Single"
 # #Card_category_class
-# data_select[which(data_select$Card_Category %in% c("Gold","platinum","Silver")),"Card_Category"]<-"Others"
+data_select[which(data_select$Card_Category %in% c("Gold","platinum","Silver")),"Card_Category"]<-"Others"
 # #Income_category_class
-# data_select[which(data_select$Income_Category %in% c("Less than $40K","$40K - $60K")),"Income_Category"]<-"Less than $60K"
-# data_select[which(data_select$Income_Category %in% c("$60K - $80K","$80K - $120K","$120K +")),"Income_Category"]<-"More than $60K"
+data_select[which(data_select$Income_Category %in% c("Less than $40K","$40K - $60K")),"Income_Category"]<-"Less than $60K"
+data_select[which(data_select$Income_Category %in% c("$60K - $80K","$80K - $120K","$120K +")),"Income_Category"]<-"More than $60K"
 
 
-# model_quali<-glm(Attrition_Flag~Customer_Age, data=data, family= binomial(logit))
+data$binattrition = ifelse(data$Attrition_Flag == "Existing Customer", 1, 0)
+model_quali<-glm(binattrition~Customer_Age, data=data, family= binomial(logit))
 #
 # # Interprétation
 # model_quali
-# summary(model_quali)
-# exp(coef(model_quali))
+summary(model_quali)
+exp(coef(model_quali))
 #
 # # Matrice de confusion
-# appren.p <- cbind(data_reg, predict(model_quali, newdata = data_reg, type = "link",
-#                                     se = TRUE))
-# appren.p <- within(appren.p, {
-#     PredictedProb <- plogis(fit)
-#     LL <- plogis(fit - (1.96 * se.fit))
-#     UL <- plogis(fit + (1.96 * se.fit))
-# })
-# appren.p <- cbind(appren.p, pred.chd = factor(ifelse(appren.p$PredictedProb > 0.5, 1, 0)))
-# colnames(appren.p)
-# appren.p<-appren.p[,c("Winner","diff_dist_att","diff_dist_att_class","fit","PredictedProb","pred.chd")]
-# (m.confusion <- as.matrix(table(appren.p$pred.chd, appren.p$Winner)))
-#
+appren.p <- cbind(data_reg, predict(model_quali, newdata = data_reg, type = "link",se = TRUE))
+appren.p <- within(appren.p, {
+    PredictedProb <- plogis(fit)
+    LL <- plogis(fit - (1.96 * se.fit))
+    UL <- plogis(fit + (1.96 * se.fit))
+})
+appren.p <- cbind(appren.p, pred.chd = factor(ifelse(appren.p$PredictedProb > 0.5, 1, 0)))
+colnames(appren.p)
+appren.p<-appren.p[,c("binattrition","Customer_Age","Card_Category","fit","PredictedProb","pred.chd")]
+(m.confusion <- as.matrix(table(appren.p$pred.chd, appren.p$binattrition)))
+
 # # Taux de bien classé
-# (m.confusion[1,1]+m.confusion[2,2]) / sum(m.confusion)
+(m.confusion[1,1]+m.confusion[2,2]) / sum(m.confusion)
 #
 # # Sensibilité
-# (m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
+(m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
 #
 # # Sensibilité
-# (m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
+(m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
 #
 # # Spécificité
-# (m.confusion[1,1]) / (m.confusion[1,1]+m.confusion[2,1])
+(m.confusion[1,1]) / (m.confusion[1,1]+m.confusion[2,1])
 #
 #
 # # ODs ratio
-# exp(cbind(coef(model_quali), confint(model_quali)))
-# library(questionr)
-# odds.ratio(model_quali)
-# install.packages("GGally")
-# library(GGally)
-# library(broom.helpers)
-# ggcoef_model(model_quali, exponentiate = TRUE)
+exp(cbind(coef(model_quali), confint(model_quali)))
+library(questionr)
+odds.ratio(model_quali)
+install.packages("GGally")
+library(GGally)
+library(broom.helpers)
+ggcoef_model(model_quali, exponentiate = TRUE)
 
 
 # Graphique des corrélations entre chacune des variables
