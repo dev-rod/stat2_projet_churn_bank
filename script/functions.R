@@ -76,6 +76,8 @@ desc_stat <- function(data, data_reg_stay, data_reg_quit, data_a, data_b, source
     # déclaration en variable globale nécessaire pour ggplotify::as.grob(~hist(...))
     data_reg_a <<- data_reg_stay
     data_reg_b <<- data_reg_quit
+    source_var <<- source_var
+    target_var <<- target_var
     # analyse visuelle
     # histogramme de chaque population
     graphA <- ggplotify::as.grob(~hist(data_reg_a[[source_var]], xlab=source_var, ylab=target_var, main = paste("Histogram of", source_var)))

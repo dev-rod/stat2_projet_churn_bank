@@ -486,8 +486,22 @@ ggplot(data, aes(x=Total_Trans_Amt, y= Total_Trans_Ct)) + geom_point(color = "re
 ggplot(data, aes(x=Total_Revolving_Bal, y= Avg_Utilization_Ratio)) + geom_point(color = "blue",size= 0.3) + theme_classic() + ggtitle("Total Revolving Bal vs Avg Utilization Ratio")
 # qu'en retire-t-on ??
 
+### 5 - Réaliser des ACM sur Attrition_flag ----
+# http://www.sthda.com/french/articles/38-methodes-des-composantes-principales-dans-r-guide-pratique/74-afc-analyse-factorielle-des-correspondances-avec-r-l-essentiel/
 
-### 5 - Classifications par clustering avec K-means ----
+# sur quelles variables ? faire une CAH en complément
+
+#  pour nous aider a trouver les perimetres de nos modeles (il y en aura surement pls)
+
+# variable dependante Y = départ ou non : attrition_flag
+# variable qualitative donc on fera une régression logistique
+
+# variable explicatives
+# age, genre, niveau education, statut marital, personnes à charge, revenu, type de carte, période de relation avec la banque...
+
+
+### 6 - Classifications par clustering avec K-means ----
+# A réaliser à partir des résultats de l'ACM réalisée precedemment
 # https://www.datanovia.com/en/fr/blog/visualisation-du-clustering-k-means-dans-r-guide-etape-par-etape/
 
 # "Il existe clairement des différences entre les deux types de clients.
@@ -503,7 +517,8 @@ ggplot(data, aes(x=Total_Revolving_Bal, y= Avg_Utilization_Ratio)) + geom_point(
 # Au lieu de cela, les deux dimensions de l'analyse en composantes principales expliquent
 # environ 31% de la variance totale des données"
 
-# TODO réduire les 23 variables à 13 plus significatives (4 quali et 9 quanti à priori)
+# TODO réduire les 23 variables à 13 plus significatives (4 quali et 9 quanti à priori),
+# faire une cAH et tatonner parmi les 13 pour trouver des clusters
 
 data_k <- data %>% mutate_if(is.factor, as.numeric)
 # seed
@@ -534,6 +549,11 @@ percentage_total <- pca_cluster %>%
 
 pca_cluster <- cbind(pca_cluster,'%'=round(percentage_total$per_tot,1))
 
+# Percentage of variance explained by dimensions
+eigenvalue <- round(get_eigenvalue(res.pca), 1)
+
+variance.percent <- eigenvalue$variance.percent
+
 c2 <- tableGrob(pca_cluster)
 
 c3 <- ggscatter(
@@ -546,11 +566,6 @@ c3 <- ggscatter(
     stat_mean(aes(color = cluster), size = 4) +
     theme_classic() +
     theme(legend.position='top')
-
-# Percentage of variance explained by dimensions
-eigenvalue <- round(get_eigenvalue(res.pca), 1)
-
-variance.percent <- eigenvalue$variance.percent
 
 my_gp <- grid::gpar(fontsize=18, font=1)
 my_top <- grid::textGrob("Kmeans cluster and PCA", gp=my_gp)
@@ -572,17 +587,9 @@ gridExtra::grid.arrange(c2, c3, ncol=2, top=my_top)
 # Total Relationship Count
 # Total Count Change
 
-### 6 - Réaliser des AFC & ACM sur Attrition_flag ----
-# http://www.sthda.com/french/articles/38-methodes-des-composantes-principales-dans-r-guide-pratique/74-afc-analyse-factorielle-des-correspondances-avec-r-l-essentiel/
 
-#  pour nous aider a trouver les perimetres de nos modeles (il y en aura surement pls)
 
-# variable dependante Y = départ ou non : attrition_flag
-# variable qualitative donc on fera une régression logistique
-
-# variable explicatives
-# age, genre, niveau education, statut marital, personnes à charge, revenu, type de carte, période de relation avec la banque...
-
+### 7 - Régression logistique et AIC ----
 
 #partage du dataset en 70/30 
 
@@ -684,3 +691,4 @@ data_select<-c("Attrition_Flag","Customer_Age","Dependent_count","Months_on_book
 data_select<-as.factor(data_select)
 simple.model <- glm(Attrition_Flag ~1, data = data_select, family = binomial)
 summary(simple.model)
+
