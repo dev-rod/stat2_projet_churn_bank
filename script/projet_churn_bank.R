@@ -685,12 +685,12 @@ ggcoef_model(model_quali, exponentiate = TRUE)
 
 
 #Model complet test
-data_select<-data
-data_select$Attrition_Flag <- as.factor(data_select$Attrition_Flag)
-data_select<-c("Attrition_Flag","Customer_Age","Dependent_count","Months_on_book","Total_Relationship_Count","Months_Inactive_12_mon","Contacts_Count_12_mon","Credit_Limit","Total_Revolving_Bal","Avg_Open_To_Buy","Total_Amt_Chng_Q4","Total_Trans_Amt","Total_Trans_Ct","Total_Ct_Chng_Q4_Q1","Avg_Utilization_Ratio")
-data_select<-as.factor(data_select)
-simple.model <- glm(Attrition_Flag ~1, data = data_select, family = binomial)
-summary(simple.model)
+#data_select<-data
+#data_select$Attrition_Flag <- as.factor(data_select$Attrition_Flag)
+#data_select<-c("Attrition_Flag","Customer_Age","Dependent_count","Months_on_book","Total_Relationship_Count","Months_Inactive_12_mon","Contacts_Count_12_mon","Credit_Limit","Total_Revolving_Bal","Avg_Open_To_Buy","Total_Amt_Chng_Q4","Total_Trans_Amt","Total_Trans_Ct","Total_Ct_Chng_Q4_Q1","Avg_Utilization_Ratio")
+#data_select<-as.factor(data_select)
+#simple.model <- glm(Attrition_Flag ~1, data = data_select, family = binomial)
+#summary(simple.model)
 
 
 
@@ -818,4 +818,21 @@ varImp(Model3)
 ggplot(varImp(Model3))+
     labs(title = "Rang importance des vars")
 
+
+
+##autres modèles
+log.model <- glm(Attrition_Flag ~ ., data=data, family=binomial(link='logit'))
+summary(log.model)
+step(log.model, direction="backward", trace=FALSE)
+
+modele_final<-glm(formula = Attrition_Flag ~ Customer_Age + Gender + Dependent_count + 
+                      Marital_Status + Income_Category + Card_Category + Total_Relationship_Count + 
+                      Months_Inactive_12_mon + Contacts_Count_12_mon + Credit_Limit + 
+                      Total_Revolving_Bal + Total_Amt_Chng_Q4_Q1 + Total_Trans_Amt + 
+                      Total_Trans_Ct + Total_Ct_Chng_Q4_Q1, family = binomial(link = "logit"), 
+                  data = data)
+pred<- predict(modele_final, test2, type='response')
+plot(modele_final)
+
+hist(pred)
 
