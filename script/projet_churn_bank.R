@@ -730,10 +730,154 @@ ggcoef_model(model_quali, exponentiate = TRUE)
 
 
 #Model complet test
-data_select<-data
-data_select$Attrition_Flag <- as.factor(data_select$Attrition_Flag)
-data_select<-c("Attrition_Flag","Customer_Age","Dependent_count","Months_on_book","Total_Relationship_Count","Months_Inactive_12_mon","Contacts_Count_12_mon","Credit_Limit","Total_Revolving_Bal","Avg_Open_To_Buy","Total_Amt_Chng_Q4","Total_Trans_Amt","Total_Trans_Ct","Total_Ct_Chng_Q4_Q1","Avg_Utilization_Ratio")
-data_select<-as.factor(data_select)
-simple.model <- glm(Attrition_Flag ~1, data = data_select, family = binomial)
-summary(simple.model)
+#data_select<-data
+#data_select$Attrition_Flag <- as.factor(data_select$Attrition_Flag)
+#data_select<-c("Attrition_Flag","Customer_Age","Dependent_count","Months_on_book","Total_Relationship_Count","Months_Inactive_12_mon","Contacts_Count_12_mon","Credit_Limit","Total_Revolving_Bal","Avg_Open_To_Buy","Total_Amt_Chng_Q4","Total_Trans_Amt","Total_Trans_Ct","Total_Ct_Chng_Q4_Q1","Avg_Utilization_Ratio")
+#data_select<-as.factor(data_select)
+#simple.model <- glm(Attrition_Flag ~1, data = data_select, family = binomial)
+#summary(simple.model)
+
+
+
+
+library(caret)
+library(pROC)
+library(ROCR)
+#Nouveau test regression
+data$Attrition_Flag<-as.factor(data$Attrition_Flag)
+class(data$Attrition_Flag)
+
+
+#Prendre des randoms pour que les résultats puissent être reproductibles
+set.seed(2000)
+
+
+#création de  notre partitionnement par 70/30
+part<-createDataPartition(data$Attrition_Flag,p=0.7,
+                          list = F,
+                          times = 1)
+
+
+
+#Nouveau test regression
+data$Attrition_Flag<-as.character(data$Attrition_Flag)
+data$Attrition_Flag[data$Attrition_Flag=="Existing Customer"]<-"Stay"
+data$Attrition_Flag[data$Attrition_Flag=="Attrited Customer"]<-"Quit"
+data$Attrition_Flag<-as.factor(data$Attrition_Flag)
+class(data$Attrition_Flag)
+
+#Formation d'une matrice de confusion
+Attrition_step <-ifelse(predictions>=d[[1]],"Stay","Quit")
+
+#création d'ensembles de données de tests
+test1 <-data[part,]
+test2<-data[-part,]
+set.seed(2000)
+
+# REGRESSION LOGISTIQUE STEP- 10 000 STEPS
+Model1 <-glm(as.factor(Attrition_Flag)~.,data=data,
+             family=binomial(logit))
+Model_step <-step(Model1,
+                  direction = "both",
+                  steps = 10000,
+                  trace = F)
+predictions <-predict(Model_step,test2,
+                      type = "response")
+roc_step<-roc(response=test2$Attrition_Flag,predictor=predictions)
+plot(roc_step)
+
+
+
+
+
+
+
+#point de coupure
+pred_step <-prediction(predictions,test2$Attrition_Flag)
+plot(performance(pred_step,"tpr","fpr"),colorize=T)
+auc_step<-performance(pred_step,"auc")
+auc_step
+roc_step<-roc(response=test2$Attrition_Flag,predictor=predictions)
+plot(roc_step)
+d<-coords(roc_step,"best","threshold",transpose=T)
+d
+roc_step
+#Formation d'une matrice de confusion
+Attrition_step <-ifelse(predictions>=d[[1]],"Stay","Quit")
+test2$Attrition_Flag<-as.factor(test2$Attrition_Flag)
+Attrition_step<-as.factor(Attrition_step)
+
+
+#matrice de confusion
+cm_1 <-confusionMatrix(test2$Attrition_Flag,Attrition_step)
+cm_1
+
+
+set.seed(2000)
+#MODEL 2
+#regression logiqtique -k-fold 
+#
+#k-folds(folds=10) 
+
+ctrl_specs <-trainControl(method = "cv",
+                          savePredictions = "all",
+                          number = 10,
+                          classProbs = T)
+dim(training)
+
+Model2<- train(Attrition_Flag~.,data = training,
+               method="glm",
+               family=binomial,
+               trControl=ctrl_specs)
+Model2
+
+ctrl_specs <-trainControl(method = "cv",
+                          savePredictions = "all",
+                          number = 10,
+                          classProbs = T)
+dim(test1)
+Model2<- train(Attrition_Flag~.,data = test1,
+               method="glm",
+               family=binomial,
+               trControl=ctrl_specs)
+Model2
+
+
+
+#model 3 méthode lasso regression
+lambda_vector <-10^seq(-5,5,length=500)
+set.seed(2000)
+Model3 <-train(Attrition_Flag~.,data =test1,
+               method="glmnet",
+               tuneGrid=expand.grid(alpha=1,lambda=lambda_vector),
+               trControl=ctrl_specs,
+               preProcess=c("center","scale"),
+               na.action = na.omit)
+Model3
+Model3$bestTune$lambda
+#méthode LASSO regression coefficients(paramètres estimés)
+round(coef(Model3$finalModel,Model3$bestTune$lambda),3)
+varImp(Model3)
+
+#importance des variables
+ggplot(varImp(Model3))+
+    labs(title = "Rang importance des vars")
+
+
+
+##autres modèles
+log.model <- glm(Attrition_Flag ~ ., data=data, family=binomial(link='logit'))
+summary(log.model)
+step(log.model, direction="backward", trace=FALSE)
+
+modele_final<-glm(formula = Attrition_Flag ~ Customer_Age + Gender + Dependent_count + 
+                      Marital_Status + Income_Category + Card_Category + Total_Relationship_Count + 
+                      Months_Inactive_12_mon + Contacts_Count_12_mon + Credit_Limit + 
+                      Total_Revolving_Bal + Total_Amt_Chng_Q4_Q1 + Total_Trans_Amt + 
+                      Total_Trans_Ct + Total_Ct_Chng_Q4_Q1, family = binomial(link = "logit"), 
+                  data = data)
+pred<- predict(modele_final, test2, type='response')
+plot(modele_final)
+
+hist(pred)
 
