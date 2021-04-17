@@ -42,6 +42,10 @@ load_libraries <- function(){
     
     if ("cowplot" %in% rownames(installed.packages()) == FALSE) {install.packages("cowplot", dependencies=TRUE)};library(cowplot)
     if ("ggplotify" %in% rownames(installed.packages()) == FALSE) {install.packages("ggplotify", dependencies=TRUE)};library(ggplotify)
+
+    if ("caret" %in% rownames(installed.packages()) == FALSE) {install.packages("caret", dependencies=TRUE)};library(caret)
+    if ("pROC" %in% rownames(installed.packages()) == FALSE) {install.packages("pROC", dependencies=TRUE)};library(pROC)
+    if ("ROCR" %in% rownames(installed.packages()) == FALSE) {install.packages("ROCR", dependencies=TRUE)};library(ROCR)
     
     # pour le probleme de CONFLIT de select() entre les deux librairies MASS et dplyr
     require(MASS)

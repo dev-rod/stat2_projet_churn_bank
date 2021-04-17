@@ -738,11 +738,6 @@ ggcoef_model(model_quali, exponentiate = TRUE)
 #summary(simple.model)
 
 
-
-
-library(caret)
-library(pROC)
-library(ROCR)
 #Nouveau test regression
 data$Attrition_Flag<-as.factor(data$Attrition_Flag)
 class(data$Attrition_Flag)
