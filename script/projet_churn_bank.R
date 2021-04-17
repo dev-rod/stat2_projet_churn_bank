@@ -115,12 +115,12 @@ data$Card_Category <- fct_relevel(data$Card_Category, "Blue", "Silver", "Gold", 
 data_quit <- data[(data$Attrition_Flag) == 1, ]
 skim(data_quit)
 str(data_quit)
-# 1627 obs.
+# 1627 partis
 
 data_stay <- data[(data$Attrition_Flag) == 0, ]
 skim(data_stay)
 str(data_stay)
-# 8500 obs.
+# 8500 restés
 
 ### 3.4 - 5 variables qualitatives : Analyse ----
 # Tableaux de frequences par Attrition_Flag
@@ -136,7 +136,7 @@ search_cors(data, data_stay, data_quit, "Gender")
 
 #### 3.4.2 - Marital_Status ----
 search_cors(data, data_stay, data_quit, "Marital_Status")
-# "0.074" "0.074" => parmi les divorcés on retrouve la meme proportion de client s qui partent que ceux qui restent.
+# "0.074" "0.074" => parmi les divorcés on retrouve la meme proportion de clients qui partent que ceux qui restent.
 # "0.073" "0.079" => parmi les statut inconnus on retrouve une proportion tres legerement plus elevée de clients qui partent  (+0.6%)
 # => peu de différence de proportion pour les divorcés et les statuts inconnus.
 # "0.385" "0.411" => parmi les celibataires, on trouve legerement plus de personnes qui se desabonnent (+2.6 %)
@@ -180,19 +180,30 @@ search_cors(data, data_stay, data_quit, "Education_Level")
 # Il semble que le niveau d'etude relativement élevé (graduate, post graduate et doctorate) facilite de depart de la banque.
 # parmi les " unknow on trouve une tres legere surrepresentation des desabonnés
 
+# en résumé
+# qui partira le + : une femme célibataire à bas revenu (<40 K$) avec un niveau d'éducation très élevé
+# qui restera le + : un homme marié à revenu moyen (40-80K$) avec un niveau d'éducation intermédiaire
+# On retiendra Gender, Marital_Status, Income_Category, Education_Level
+
 ### 3.5 - 14 variables quantitatives : Analyse ----
 
 #### 3.5.1 - Echantillonnage de 1000 restant et 1000 partant ----
 sample_quit<-sample(1:dim(data_quit)[1],1000)
-sample_Stay<-sample(1:dim(data_stay)[1],1000)
-data_reg<-rbind(data_quit[sample_quit,],data_stay[sample_Stay,])
+sample_stay<-sample(1:dim(data_stay)[1],1000)
+
+# TODO le fait de ne plus disposer du ratio de nombre de partant sur totalité de l'échantillon ne va-t-il pas impacter 
+# la régression logistique finale ?
+data_reg<-rbind(data_quit[sample_quit,],data_stay[sample_stay,])
 skim(data_reg)
 
+
 # data_reg_quit
+# TODO finalement c'est sample_quit en fait non ?
 data_reg_quit <- data_reg[(data_reg$Attrition_Flag) == 1, ]
 skim(data_reg_quit)
 str(data_reg_quit)
 # data_reg_stay 
+# TODO finalement c'est sample_stay en fait non ?
 data_reg_stay <- data_reg[(data_reg$Attrition_Flag) == 0, ]
 skim(data_reg_stay)
 str(data_reg_stay)
@@ -212,15 +223,16 @@ str(data_reg_stay)
 # + statistiques descriptives des deux echantillons: Min.,1st Qu.,Median,Mean,3rd Qu.,Max.
 # + rquery_t_test => qui donne le resultat du test si l'ensemble des critères est respecté
 # + test de wilcoxon si l'un des deux échantillons ne respecte pas la loi normale
- 
+source('script/functions.R')
+load_libraries()
 #### 3.5.2 - Customer_Age ----
-desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Customer_Age", "Attrition_Flag")
-test_stat(data_reg_stay, data_reg_quit, "Customer_Age")
+desc_stat(data, data_stay, data_quit, "Customer_Age", "Attrition_Flag")
+test_stat(data_reg_stay, data_reg_quit, "Customer_Age", c("stay", "quit"))
 # summary(data_stay$Customer_Age)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 26.00   41.00   46.00   46.26   52.00   73.00 
 # summary(data_quit$Customer_Age)
-# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max.  
 # 26.00   41.00   47.00   46.66   52.00   68.00 
 # variance data_stay$Customer_Age => 65.30509
 # variance data_quit$Customer_Age => 58.76221
@@ -228,8 +240,8 @@ test_stat(data_reg_stay, data_reg_quit, "Customer_Age")
 # WILCOXON => W = 511132, p-value = 0.3884 => Les deux échantillons ne sont pas significativement différents.
 
 #### 3.5.3 - Dependent_count ----
-desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Dependent_count", "Attrition_Flag")
-test_stat(data_reg_stay, data_reg_quit, "Dependent_count")
+desc_stat(data, data_stay, data_quit, "Dependent_count", "Attrition_Flag")
+test_stat(data_reg_stay, data_reg_quit, "Dependent_count", c("stay", "quit"))
 # summary(data_stay$Dependent_count)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 0.000   1.000   2.000   2.335   3.000   5.000 
@@ -240,10 +252,11 @@ test_stat(data_reg_stay, data_reg_quit, "Dependent_count")
 # variance data_quit$Dependent_count => 1.625651
 # STUDENT => Use a non parametric test like Wilcoxon test.
 # WILCOXON => W = 513114, p-value = 0.2975 => Les deux échantillons ne sont pas significativement différents.
+# TODO on a des valeurs aberrantes on dirait sur ceux qui sont restés
 
 #### 3.5.4 - Months_on_book ----
-desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Months_on_book", "Attrition_Flag")
-test_stat(data_reg_stay, data_reg_quit, "Months_on_book")
+desc_stat(data, data_stay, data_quit, "Months_on_book", "Attrition_Flag")
+test_stat(data_reg_stay, data_reg_quit, "Months_on_book", c("stay", "quit"))
 # summary(data_stay$Months_on_book)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 13.00   31.00   36.00   35.88   40.00   56.00 
@@ -258,8 +271,8 @@ test_stat(data_reg_stay, data_reg_quit, "Months_on_book")
 # WILCOXON => W = 509041, p-value = 0.4808 => Les deux échantillons ne sont pas significativement différents.
 
 #### 3.5.5 - Total_Relationship_Count ----
-desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Total_Relationship_Count", "Attrition_Flag")
-test_stat(data_reg_stay, data_reg_quit, "Total_Relationship_Count")
+desc_stat(data, data_stay, data_quit, "Total_Relationship_Count", "Attrition_Flag")
+test_stat(data_reg_stay, data_reg_quit, "Total_Relationship_Count", c("stay", "quit"))
 # summary(data_stay$Total_Relationship_Count)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 1.000   3.000   4.000   3.915   5.000   6.000 
@@ -274,8 +287,8 @@ test_stat(data_reg_stay, data_reg_quit, "Total_Relationship_Count")
 # WILCOXON => W = 374438, p-value < 2.2e-16 => Les deux échantillons sont significativement différents.
 
 #### 3.5.6 - Months_Inactive_12_mon ----
-desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Months_Inactive_12_mon", "Attrition_Flag")
-test_stat(data_reg_stay, data_reg_quit, "Months_Inactive_12_mon")
+desc_stat(data, data_stay, data_quit, "Months_Inactive_12_mon", "Attrition_Flag")
+test_stat(data_reg_stay, data_reg_quit, "Months_Inactive_12_mon", c("stay", "quit"))
 # > summary(data_stay$Months_Inactive_12_mon)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
 #  0.000   1.000   2.000   2.274   3.000   6.000
@@ -290,8 +303,8 @@ test_stat(data_reg_stay, data_reg_quit, "Months_Inactive_12_mon")
 # WILCOXON => W = 634140, p-value < 2.2e-16 => Les deux échantillons sont significativement différents.
 
 #### 3.5.7 - Contacts_Count_12_mon ----
-desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Contacts_Count_12_mon", "Attrition_Flag")
-test_stat(data_reg_stay, data_reg_quit, "Contacts_Count_12_mon")
+desc_stat(data, data_stay, data_quit, "Contacts_Count_12_mon", "Attrition_Flag")
+test_stat(data_reg_stay, data_reg_quit, "Contacts_Count_12_mon", c("stay", "quit"))
 # summary(data_stay$Contacts_Count_12_mon)
 # # Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
 # # 0.000   2.000   2.000   2.356   3.000   5.000
@@ -306,8 +319,8 @@ test_stat(data_reg_stay, data_reg_quit, "Contacts_Count_12_mon")
 # WILCOXON => w = 662803, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
 
 #### 3.5.8 - Credit_Limit ----
-desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Credit_Limit", "Attrition_Flag")
-test_stat(data_reg_stay, data_reg_quit, "Credit_Limit")
+desc_stat(data, data_stay, data_quit, "Credit_Limit", "Attrition_Flag")
+test_stat(data_reg_stay, data_reg_quit, "Credit_Limit", c("stay", "quit"))
 # summary(data_stay$Credit_Limit)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 1438    2602    4644    8727   11253   34516 
@@ -322,8 +335,8 @@ test_stat(data_reg_stay, data_reg_quit, "Credit_Limit")
 # WILCOXON => W = 465106, p-value = 0.006881=> Les deux échantillons ne sont pas significativement différents.
 
 #### 3.5.9 - Total_Revolving_Bal ----
-desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Total_Revolving_Bal", "Attrition_Flag")
-test_stat(data_reg_stay, data_reg_quit, "Total_Revolving_Bal")
+desc_stat(data, data_stay, data_quit, "Total_Revolving_Bal", "Attrition_Flag")
+test_stat(data_reg_stay, data_reg_quit, "Total_Revolving_Bal", c("stay", "quit"))
 # summary(data_stay$Total_Revolving_Bal)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 0     800    1364    1257    1807    2517 
@@ -339,8 +352,8 @@ test_stat(data_reg_stay, data_reg_quit, "Total_Revolving_Bal")
 # W = 324850, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
 
 #### 3.5.10 - Avg_Open_To_Buy ----
-desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Avg_Open_To_Buy", "Attrition_Flag")
-test_stat(data_reg_stay, data_reg_quit, "Avg_Open_To_Buy")
+desc_stat(data, data_stay, data_quit, "Avg_Open_To_Buy", "Attrition_Flag")
+test_stat(data_reg_stay, data_reg_quit, "Avg_Open_To_Buy", c("stay", "quit"))
 # > summary(data_stay$Avg_Open_To_Buy)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
 # 15    1184    3470    7470    9978   34516
@@ -355,8 +368,8 @@ test_stat(data_reg_stay, data_reg_quit, "Avg_Open_To_Buy")
 # WILCOXON => W = 521333, p-value = 0.09853 => Les deux échantillons  ne sont pas significativement différents.
 
 #### 3.5.11 - Total_Amt_Chng_Q4_Q1 ----
-desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Total_Amt_Chng_Q4_Q1", "Attrition_Flag")
-test_stat(data_reg_stay, data_reg_quit, "Total_Amt_Chng_Q4_Q1")
+desc_stat(data, data_stay, data_quit, "Total_Amt_Chng_Q4_Q1", "Attrition_Flag")
+test_stat(data_reg_stay, data_reg_quit, "Total_Amt_Chng_Q4_Q1", c("stay", "quit"))
 # > summary(data_stay$Total_Amt_Chng_Q4_Q1)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 0.2560  0.6430  0.7430  0.7725  0.8600  3.3970 
@@ -371,14 +384,14 @@ test_stat(data_reg_stay, data_reg_quit, "Total_Amt_Chng_Q4_Q1")
 # WILCOXON => W = 414090, p-value = 2.874e-11=> Les deux échantillons sont significativement différents.
 
 #### 3.5.12 - Total_Trans_Amt ----
-desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Total_Trans_Amt", "Attrition_Flag")
-test_stat(data_reg_stay, data_reg_quit, "Total_Trans_Amt")
+desc_stat(data, data_stay, data_quit, "Total_Trans_Amt", "Attrition_Flag")
+test_stat(data_reg_stay, data_reg_quit, "Total_Trans_Amt", c("stay", "quit"))
 # STUDENT => Use a non parametric test like Wilcoxon test.
 # WILCOXON => W = 345364, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
 
 #### 3.5.13 - Total_Trans_Ct ----
-desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Total_Trans_Ct", "Attrition_Flag")
-test_stat(data_reg_stay, data_reg_quit, "Total_Trans_Ct")
+desc_stat(data, data_stay, data_quit, "Total_Trans_Ct", "Attrition_Flag")
+test_stat(data_reg_stay, data_reg_quit, "Total_Trans_Ct", c("stay", "quit"))
 # > summary(data_stay$Total_Trans_Ct)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 11.00   54.00   71.00   68.67   82.00  139.00 
@@ -398,14 +411,12 @@ p1 <- data %>%
     select(Total_Trans_Ct,Attrition_Flag) %>%
     ggplot(aes(x=Total_Trans_Ct,fill=Attrition_Flag)) +
     geom_bar(alpha=0.4,position="dodge") +
-    labs(title="Distribution of Total Transaction Count by Customer type",
-         x="Total Transaction Count",y="Count")
+    labs(title="Distribution of Total Transaction Count by Customer type", x="Total Transaction Count", y="Count")
 p2 <- data %>%
     select(Total_Trans_Amt,Attrition_Flag) %>%
     ggplot(aes(x=Total_Trans_Amt,fill=Attrition_Flag)) +
     geom_density(alpha=0.4) +
-    labs(title="Distribution of Total Transaction Amount by Customer type",
-         x="Total Transaction Amount",y="Density")
+    labs(title="Distribution of Total Transaction Amount by Customer type", x="Total Transaction Amount", y="Density")
 grid.arrange(p1, p2, nrow = 2)
 # juste un test de graph gridding a priori, on garde ou pas ? peu pertinent à priori, les axes ne sont pas clairs
 
@@ -518,16 +529,41 @@ ggplot(data, aes(x=Total_Revolving_Bal, y= Avg_Utilization_Ratio)) + geom_point(
 # environ 31% de la variance totale des données"
 
 # TODO réduire les 23 variables à 13 plus significatives (4 quali et 9 quanti à priori),
+# qual : Gender, Marital_Status, Income_Category, Education_Level
+# quant: Avg_Utilization_Ratio, Total_Ct_Chng_Q4_Q1, Total_Trans_Ct, Total_Trans_Amt, Total_Amt_Chng_Q4_Q1, Total_Revolving_Bal,
+# Months_Inactive_12_mon, Contacts_Count_12_mon, Total_Relationship_Count
 # faire une cAH et tatonner parmi les 13 pour trouver des clusters
 
 data_k <- data %>% mutate_if(is.factor, as.numeric)
+data_kmeans <- scale(data_k[, c(-1, -2, -4, -8, -9, -13, -15)])
 # seed
 set.seed(123)
-# Retrait du taux d'attrition & CLUSTERING en 6 groupes avec KMEANS
-res.km <- kmeans(scale(data_k[, -1]), 6, nstart = 25)
+
+# determining nb clusters with elbow method (very low)
+fviz_nbclust(data_kmeans, kmeans, method = "wss") +
+    geom_vline(xintercept = 4, linetype = 2)+
+    labs(subtitle = "Elbow method")
+# ==> 4 clusters
+
+# determining nb clusters with Silhouette method (quickly)
+fviz_nbclust(data_kmeans, kmeans, method = "silhouette")+
+    labs(subtitle = "Silhouette method")
+# ==> 2 clusters
+
+# determining nb clusters with gap statistics method (very very low)
+fviz_nbclust(data_kmeans, kmeans, nstart = 25, method = "gap_stat", nboot = 50)+
+    labs(subtitle = "Gap statistic method")
+# ==> 1 cluster
+
+# if ("NbClust" %in% rownames(installed.packages()) == FALSE) {install.packages("NbClust", dependencies=TRUE)};library(NbClust)
+# nb <- NbClust(data_kmeans, distance = "euclidean", min.nc = 2,
+#               max.nc = 10, method = "kmeans")
+
+# Retrait du taux d'attrition & CLUSTERING en 4 groupes avec KMEANS
+res.km <- kmeans(data_kmeans, 4, nstart = 25)
 # RÉDUCTION DE DIMENSION À L'AIDE DU PCA
-# Réduction de chacune des 23 variables quantitatives à 23 groupe/dimension en utilisant l'ACP(prcomp)
-res.pca <- prcomp(data_k[, -1], scale = TRUE)
+# Réduction de chacune des 13 variables quantitatives à 13 groupe/dimension en utilisant l'ACP(prcomp)
+res.pca <- prcomp(data_kmeans, scale = FALSE)
 
 # Coordonnées des individus
 ind.coord <- as.data.frame(factoextra::get_pca_ind(res.pca)$coord)
@@ -571,10 +607,17 @@ my_gp <- grid::gpar(fontsize=18, font=1)
 my_top <- grid::textGrob("Kmeans cluster and PCA", gp=my_gp)
 gridExtra::grid.arrange(c2, c3, ncol=2, top=my_top)
 
-# factoextra::fviz_cluster(res.km, data = data_k[, -1],
-#                          palette = c("#ceec97", "#f4b393", "#fc60a8", "#7a28cb", "#494368", "#033f63"), 
+fviz_pca_var(res.pca,
+             col.var = "contrib", 
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     
+)
+
+#  "#494368", "#033f63"
+# factoextra::fviz_cluster(res.km, data = data_kmeans,
+#                          palette = c("#ceec97", "#f4b393", "#fc60a8", "#7a28cb"),
 #                          geom = "point",
-#                          ellipse.type = "convex", 
+#                          ellipse.type = "convex",
 #                          ggtheme = theme_bw()
 # )
 
@@ -588,42 +631,44 @@ gridExtra::grid.arrange(c2, c3, ncol=2, top=my_top)
 # Total Count Change
 
 
-
 ### 7 - Régression logistique et AIC ----
 
-#partage du dataset en 70/30 
-
-intrain<-createDataPartition(data$Attrition_Flag,p=0.7,
-                             list = F,
-                             times = 1)
+# partage du dataset en 70/30 
+intrain <- createDataPartition(data$Attrition_Flag, p=0.7, list = F, times = 1)
 # creation des datasets: testing (30%) & training (70%) pour minimiser le ridque de surentraienemnt 
-training <-data[intrain,]
-testing <-data[-intrain,]
+training <- data[intrain,]
+testing <- data[-intrain,]
 
 # ---- modification des classes lorsqu'il y a des trop fort desequilibres
 
-# # CLASSE => message d'erreur 
+# CLASSE => message d'erreur 
 
-data_select<-data
-# #classe_marital_class
-data_select[which(data_select$Marital_Status %in% c("Divorced","Single")),"Marital_Status"]<-"Single"
-# #Card_category_class
-data_select[which(data_select$Card_Category %in% c("Gold","platinum","Silver")),"Card_Category"]<-"Others"
-# #Income_category_class
-data_select[which(data_select$Income_Category %in% c("Less than $40K","$40K - $60K")),"Income_Category"]<-"Less than $60K"
-data_select[which(data_select$Income_Category %in% c("$60K - $80K","$80K - $120K","$120K +")),"Income_Category"]<-"More than $60K"
+data_select <- data[, c(-2, -4, -8, -9, -13, -15)]
+# classe_marital_class
+data_select[which(data_select$Marital_Status %in% c("Divorced","Single")),"Marital_Status"] <- "Single"
+# Card_category_class
+#data_select[which(data_select$Card_Category %in% c("Gold","platinum","Silver")),"Card_Category"]<-"Others"
+# Income_category_class
+
+levels(data_select$Income_Category) = c(levels(data_select$Income_Category), "Less than $60K", "More than $60K")
+data_select[which(data_select$Income_Category %in% c("Less than $40K", "$40K - $60K")),"Income_Category"] <- "Less than $60K"
+data_select[which(data_select$Income_Category %in% c("$60K - $80K","$80K - $120K","$120K +")),"Income_Category"] <- "More than $60K"
+
+full.model <- lm(Attrition_Flag ~., data = data_select)
+summary(full.model)
 
 
-data$binattrition = ifelse(data$Attrition_Flag == "Existing Customer", 1, 0)
-model_quali<-glm(binattrition~Customer_Age, data=data, family= binomial(logit))
-#
-# # Interprétation
+
+
+model_quali<-glm(Attrition_Flag~Income_Category, data=data_select, family= binomial(logit))
+
+# Interprétation
 # model_quali
 summary(model_quali)
 exp(coef(model_quali))
-#
-# # Matrice de confusion
-appren.p <- cbind(data_reg, predict(model_quali, newdata = data_reg, type = "link",se = TRUE))
+
+# Matrice de confusion
+appren.p <- cbind(data_reg, predict(model_quali, newdata = data_reg, type = "link", se = TRUE))
 appren.p <- within(appren.p, {
     PredictedProb <- plogis(fit)
     LL <- plogis(fit - (1.96 * se.fit))
@@ -634,20 +679,20 @@ colnames(appren.p)
 appren.p<-appren.p[,c("binattrition","Customer_Age","Card_Category","fit","PredictedProb","pred.chd")]
 (m.confusion <- as.matrix(table(appren.p$pred.chd, appren.p$binattrition)))
 
-# # Taux de bien classé
+# Taux de bien classé
 (m.confusion[1,1]+m.confusion[2,2]) / sum(m.confusion)
-#
-# # Sensibilité
+
+# Sensibilité
 (m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
-#
-# # Sensibilité
+
+# Sensibilité
 (m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
-#
-# # Spécificité
+
+# Spécificité
 (m.confusion[1,1]) / (m.confusion[1,1]+m.confusion[2,1])
-#
-#
-# # ODs ratio
+
+
+# ODs ratio
 exp(cbind(coef(model_quali), confint(model_quali)))
 library(questionr)
 odds.ratio(model_quali)

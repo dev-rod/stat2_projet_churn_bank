@@ -49,39 +49,30 @@ load_libraries <- function(){
     # puis utiliser dplyr::select() pour utiliser le select() de la librairie dplyr.
     # car sinon par Par defaut c'est le select de la  la librairie MASS
     
-    source('http://www.sthda.com/upload/rquery_t_test.r')
+    #source('http://www.sthda.com/upload/rquery_t_test.r')
+    source('script/fonction_rquery.t.test.R')
 }
 
-# install_lib <- function(lib) {
-#     if (lib %in% rownames(installed.packages()) == FALSE) {
-#         install.packages(lib, dependencies=TRUE)
-#     }
-#     message(lib)
-#     library(eval(lib))
-#     
-#     return(TRUE)
-# }
-
 # stat descriptives
-desc_stat <- function(data, data_reg_stay, data_reg_quit, data_a, data_b, source_var, target_var) {
+desc_stat <- function(data, data_stay, data_quit, source_var, target_var) {
+
     message(paste("summary de data_stay$", source_var, sep=""))
-    print(summary(data_a[[source_var]]))
+    print(summary(data_stay[[source_var]]))
+    message(paste("variance de data_stay", source_var))
+    print(var(data_stay[[source_var]]))
+
     message(paste("summary de data_quit$", source_var, sep=""))
-    print(summary(data_b[[source_var]]))
-    message(paste("var de data_stay", source_var))
-    print(var(data_a[[source_var]]))
-    message(paste("var de data_quit", source_var))
-    print(var(data_b[[source_var]]))
+    print(summary(data_quit[[source_var]]))
+    message(paste("variance de data_quit", source_var))
+    print(var(data_quit[[source_var]]))
     
     # déclaration en variable globale nécessaire pour ggplotify::as.grob(~hist(...))
-    data_reg_a <<- data_reg_stay
-    data_reg_b <<- data_reg_quit
     source_var <<- source_var
     target_var <<- target_var
     # analyse visuelle
     # histogramme de chaque population
-    graphA <- ggplotify::as.grob(~hist(data_reg_a[[source_var]], xlab=source_var, ylab=target_var, main = paste("Histogram of", source_var)))
-    graphB <- ggplotify::as.grob(~hist(data_reg_b[[source_var]], xlab=source_var, ylab=target_var, main = paste("Histogram of" , source_var)))
+    graphA <- ggplotify::as.grob(~hist(data_stay[[source_var]], xlab=source_var, ylab=target_var, main = paste("[STAYED] Histo of", source_var)))
+    graphB <- ggplotify::as.grob(~hist(data_quit[[source_var]], xlab=source_var, ylab=target_var, main = paste("[QUIT] Histo of" , source_var)))
     # comparaison des dispersions
     graphC <- ggplotify::as.grob(~boxplot(data[[source_var]] ~ data[[target_var]], xlab=source_var, ylab=target_var))
     # plot de variable source par variable cible
@@ -94,9 +85,9 @@ desc_stat <- function(data, data_reg_stay, data_reg_quit, data_a, data_b, source
     cowplot::plot_grid(graphA, graphB, graphC, graphD, labels=c("A", "B", "C", "D"), ncol = 2, nrow = 2)
 }
 # Tests de student et de wilcoxon
-test_stat <- function(data_reg_stay, data_reg_quit, source_var) {
+test_stat <- function(data_reg_stay, data_reg_quit, source_var, wording) {
     message("Test de student")
-    print(rquery.t.test(data_reg_quit[[source_var]], data_reg_stay[[source_var]]))
+    print(rquery.t.test(data_reg_quit[[source_var]], data_reg_stay[[source_var]], wording=wording))
     message("si on est éloigné d'une loi normale, Use a non parametric test like Wilcoxon test.")
     message("Test de Wilcoxon")
     print(wilcox.test(data_reg_quit[[source_var]], data_reg_stay[[source_var]]))
