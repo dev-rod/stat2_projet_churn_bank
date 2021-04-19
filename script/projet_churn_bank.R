@@ -2,7 +2,7 @@
 # Kaggle: https://www.kaggle.com/sakshigoyal7/credit-card-customers
 # Jeux d’apprentissage : 10 K lignes / 23 colonnes
 
-# TODO : https://www.kaggle.com/josephchan524/bankchurnersclassifier-recall-97-accuracy-95
+# https://www.kaggle.com/josephchan524/bankchurnersclassifier-recall-97-accuracy-95
 
 # dernier commit intégré hors moi : analyses visuels + comparaison de moyenne des variables quantis - 29e6d29
 # Krysyna committed 11 days ago - 31 mars 2021 - 00h20
@@ -48,7 +48,7 @@ length(unique(data$CLIENTNUM))
 str(data)
 
 ##### la variable explicative : Attrition_Flag ( Factor )
-# C'est une vartiable qualitative, le modele a utiliser est donc une regression logistique=> regression logistique
+# C'est une vartiable qualitative, le modele a utiliser est donc une regression logistique
 summary(data)
 print (skim(data))
 
@@ -191,19 +191,15 @@ search_cors(data, data_stay, data_quit, "Education_Level")
 sample_quit<-sample(1:dim(data_quit)[1],1000)
 sample_stay<-sample(1:dim(data_stay)[1],1000)
 
-# TODO le fait de ne plus disposer du ratio de nombre de partant sur totalité de l'échantillon ne va-t-il pas impacter 
-# la régression logistique finale ?
-data_reg<-rbind(data_quit[sample_quit,],data_stay[sample_stay,])
+# On utilise l'échantillonage pour les test de student et de wilcoxon (cet échantillonage )
+data_reg <- rbind(data_quit[sample_quit,],data_stay[sample_stay,])
 skim(data_reg)
 
-
 # data_reg_quit
-# TODO finalement c'est sample_quit en fait non ?
 data_reg_quit <- data_reg[(data_reg$Attrition_Flag) == 1, ]
 skim(data_reg_quit)
 str(data_reg_quit)
 # data_reg_stay 
-# TODO finalement c'est sample_stay en fait non ?
 data_reg_stay <- data_reg[(data_reg$Attrition_Flag) == 0, ]
 skim(data_reg_stay)
 str(data_reg_stay)
@@ -223,8 +219,7 @@ str(data_reg_stay)
 # + statistiques descriptives des deux echantillons: Min.,1st Qu.,Median,Mean,3rd Qu.,Max.
 # + rquery_t_test => qui donne le resultat du test si l'ensemble des critères est respecté
 # + test de wilcoxon si l'un des deux échantillons ne respecte pas la loi normale
-source('script/functions.R')
-load_libraries()
+
 #### 3.5.2 - Customer_Age ----
 desc_stat(data, data_stay, data_quit, "Customer_Age", "Attrition_Flag")
 test_stat(data_reg_stay, data_reg_quit, "Customer_Age", c("stay", "quit"))
@@ -253,6 +248,7 @@ test_stat(data_reg_stay, data_reg_quit, "Dependent_count", c("stay", "quit"))
 # STUDENT => Use a non parametric test like Wilcoxon test.
 # WILCOXON => W = 513114, p-value = 0.2975 => Les deux échantillons ne sont pas significativement différents.
 # TODO on a des valeurs aberrantes on dirait sur ceux qui sont restés
+# p value > 5%, on ne peut rejeter l'hypothèse nulle, les 2 echantillons ne sont pas forcément différents
 
 #### 3.5.4 - Months_on_book ----
 desc_stat(data, data_stay, data_quit, "Months_on_book", "Attrition_Flag")
@@ -285,6 +281,7 @@ test_stat(data_reg_stay, data_reg_quit, "Total_Relationship_Count", c("stay", "q
 # [1] 2.489395
 # STUDENT => Use a non parametric test like Wilcoxon test.
 # WILCOXON => W = 374438, p-value < 2.2e-16 => Les deux échantillons sont significativement différents.
+# p value < 5%, on rejette l'hypothèse nulle, les 2 echantillons sont différents
 
 #### 3.5.6 - Months_Inactive_12_mon ----
 desc_stat(data, data_stay, data_quit, "Months_Inactive_12_mon", "Attrition_Flag")
@@ -300,7 +297,7 @@ test_stat(data_reg_stay, data_reg_quit, "Months_Inactive_12_mon", c("stay", "qui
 # > var(data_quit$Months_Inactive_12_mon)
 # 1] 0.8093216
 # STUDENT => Use a non parametric test like Wilcoxon test.
-# WILCOXON => W = 634140, p-value < 2.2e-16 => Les deux échantillons sont significativement différents.
+# WILCOXON => W = 634140, p-value < 2.2e-16 => Les 2 échantillons sont significativement différents.
 
 #### 3.5.7 - Contacts_Count_12_mon ----
 desc_stat(data, data_stay, data_quit, "Contacts_Count_12_mon", "Attrition_Flag")
@@ -316,7 +313,7 @@ test_stat(data_reg_stay, data_reg_quit, "Contacts_Count_12_mon", c("stay", "quit
 # var(data_quit$Contacts_Count_12_mon)
 # 1.189271
 # STUDENT => Use a non parametric test like Wilcoxon test.
-# WILCOXON => w = 662803, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
+# WILCOXON => w = 662803, p-value < 2.2e-16=> Les 2 échantillons sont significativement différents.
 
 #### 3.5.8 - Credit_Limit ----
 desc_stat(data, data_stay, data_quit, "Credit_Limit", "Attrition_Flag")
@@ -365,7 +362,7 @@ test_stat(data_reg_stay, data_reg_quit, "Avg_Open_To_Buy", c("stay", "quit"))
 # > var(data_quit$Avg_Open_To_Buy)
 # [1] 82977673
 # STUDENT => Use a non parametric test like Wilcoxon test.
-# WILCOXON => W = 521333, p-value = 0.09853 => Les deux échantillons  ne sont pas significativement différents.
+# WILCOXON => W = 521333, p-value = 0.09853 => Les deux échantillons ne sont pas significativement différents.
 
 #### 3.5.11 - Total_Amt_Chng_Q4_Q1 ----
 desc_stat(data, data_stay, data_quit, "Total_Amt_Chng_Q4_Q1", "Attrition_Flag")
@@ -421,8 +418,8 @@ grid.arrange(p1, p2, nrow = 2)
 # juste un test de graph gridding a priori, on garde ou pas ? peu pertinent à priori, les axes ne sont pas clairs
 
 #### 3.5.14 - Total_Ct_Chng_Q4_Q1 ---- 
-desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Total_Ct_Chng_Q4_Q1", "Attrition_Flag")
-test_stat(data_reg_stay, data_reg_quit, "Total_Ct_Chng_Q4_Q1")
+desc_stat(data, data_stay, data_quit, "Total_Ct_Chng_Q4_Q1", "Attrition_Flag")
+test_stat(data_reg_stay, data_reg_quit, "Total_Ct_Chng_Q4_Q1", c("stay", "quit"))
 # > summary(data_stay$Total_Ct_Chng_Q4_Q1)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 0.0280  0.6170  0.7210  0.7424  0.8330  3.7140 
@@ -437,8 +434,8 @@ test_stat(data_reg_stay, data_reg_quit, "Total_Ct_Chng_Q4_Q1")
 # WILCOXON => W = 263315, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
 
 #### 3.5.15 - Avg_Utilization_Ratio ----
-desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Avg_Utilization_Ratio", "Attrition_Flag")
-test_stat(data_reg_stay, data_reg_quit, "Avg_Utilization_Ratio")
+desc_stat(data, data_stay, data_quit, "Avg_Utilization_Ratio", "Attrition_Flag")
+test_stat(data_reg_stay, data_reg_quit, "Avg_Utilization_Ratio", c("stay", "quit"))
 # > summary(data_stay$Avg_Utilization_Ratio)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 0.0000  0.0550  0.2110  0.2964  0.5292  0.9940 
@@ -466,50 +463,40 @@ test_stat(data_reg_stay, data_reg_quit, "Avg_Utilization_Ratio")
 
 ### 4 - Matrice de correlation entre variables ----
 
-# Graphique I des corrélations entre chacune des variables - obsolete
-# data %>% select(where(is.numeric)) %>%
-#     as.matrix() %>%
-#     cor() %>%
-#     corrplot(method = "number", type="lower")
+# Graphique des corrélations entre chacune des variables avec la méthode de spearman
+spearman_graph_correlation(data)
+# Visualisation des 5 plus fortes corrélations ressortant de la matrice de corrélation :
 
-# Graphique II des corrélations entre chacune des variables avec la méthode de spearman
-cor_spearman <-
-    cor(data[, sapply(data, is.numeric)], method = 'spearman')
+# Customer age and months of book are highly correlated (0.77)
+# plus un client est d'âge avancé plus on peut deviner que le client est installé dans cette banque
+# depuis un certain temps mais ce n'est pas forcément intuitif
+# on ignorera cette relation car ses 2 variables n'ont pas été retenu
+ggplot(data, aes(x=Customer_Age, y=Months_on_book)) + geom_point(color = "black", size= 0.3) + theme_classic() + ggtitle("Months on book vs Customer Age")
 
-# Visualizing with a heatmap the correlation matrix with the pearson method
-as.matrix(data.frame(cor_spearman)) %>%
-    round(3) %>% 
-    hchart() %>%
-    hc_add_theme(hc_theme_smpl()) %>%
-    hc_title(text = "Spearman's correlation coefficients", align = "center") %>%
-    hc_legend(align = "center") %>%
-    hc_colorAxis(stops = color_stops(colors = viridis::inferno(10))) %>%
-    hc_plotOptions(series = list(boderWidth = 0,
-                                 dataLabels = list(enabled = TRUE)))
-# qu'en déduisons nous ?
+# Total Transaction Count and Total Transaction Amount are highly correlated (0.88)
+# oui en effet cela peut paraitre logique
+ggplot(data, aes(x=Total_Trans_Amt, y=Total_Trans_Ct)) + geom_point(color = "red", size = 0.3) + theme_classic() + ggtitle("Total Trans Amt vs Total Trans Ct")
 
-#  Visualisation des 3 plus fortes corrélations ressortant de la matrice de corrélation :
-# Custumer age and months of book are highly correlated (0.79)
-ggplot(data, aes(x=Customer_Age, y=Months_on_book)) + geom_point(color = "black",size= 0.3) + theme_classic() + ggtitle("Months on book vs Customer Age")
-# Total Transaction Count and Total Transaction Amount are highly correlated (0.81)
-ggplot(data, aes(x=Total_Trans_Amt, y= Total_Trans_Ct)) + geom_point(color = "red",size = 0.3) + theme_classic() + ggtitle("Total Trans Amt vs Total Trans Ct")
-# Total Revovlving Balance and Average Utilization Ratio are correlated (0.62)
-ggplot(data, aes(x=Total_Revolving_Bal, y= Avg_Utilization_Ratio)) + geom_point(color = "blue",size= 0.3) + theme_classic() + ggtitle("Total Revolving Bal vs Avg Utilization Ratio")
+# Total Revolving Balance and Average Utilization Ratio are correlated (0.71)
+# oui en effet le taux d'utilisation de la carte est forcément lié au crédit renouvelable restant en fin de mois
+ggplot(data, aes(x=Total_Revolving_Bal, y=Avg_Utilization_Ratio)) + geom_point(color = "blue", size= 0.3) + theme_classic() + ggtitle("Total Revolving Bal vs Avg Utilization Ratio")
+
+# Credit_Limit and Avg_open_to_buy are correlated (0.93)
+# oui en effet la limite de crédit conditionne le montant des achats et in extenso leur moyenne
+ggplot(data, aes(x=Credit_Limit, y=Avg_Open_To_Buy)) + geom_point(color = "blue", size= 0.3) + theme_classic() + ggtitle("Credit_Limit vs Avg_open_to_buy")
+
+# Avg_Utilization_Ratio and Avg_Open_To_Buy are negatively correlated (-0.69)
+# oui en effet le taux d'utilisation conditionne le montant des achats et in extenso leur moyenne
+ggplot(data, aes(x=Avg_Utilization_Ratio, y=Avg_Open_To_Buy)) + geom_point(color = "blue", size= 0.3) + theme_classic() + ggtitle("Avg_Utilization_Ratio vs Avg_Open_To_Buy")
+
 # qu'en retire-t-on ??
+# on peut retirer à priori de notre jeu de 13 variables avg_utilization_ratio et Total_Trans_Amt
 
-### 5 - Réaliser des ACM sur Attrition_flag ----
+### 5 - Réaliser des ACM sur Attrition_flag ? ----
 # http://www.sthda.com/french/articles/38-methodes-des-composantes-principales-dans-r-guide-pratique/74-afc-analyse-factorielle-des-correspondances-avec-r-l-essentiel/
 
-# sur quelles variables ? faire une CAH en complément
-
-#  pour nous aider a trouver les perimetres de nos modeles (il y en aura surement pls)
-
-# variable dependante Y = départ ou non : attrition_flag
-# variable qualitative donc on fera une régression logistique
-
-# variable explicatives
-# age, genre, niveau education, statut marital, personnes à charge, revenu, type de carte, période de relation avec la banque...
-
+# sur quelles variables ? faire une CAH en complément ?
+# pour nous aider a trouver les perimetres de nos modeles (il y en aura surement plusieurs)
 
 ### 6 - Classifications par clustering avec K-means ----
 # A réaliser à partir des résultats de l'ACM réalisée precedemment
@@ -528,178 +515,177 @@ ggplot(data, aes(x=Total_Revolving_Bal, y= Avg_Utilization_Ratio)) + geom_point(
 # Au lieu de cela, les deux dimensions de l'analyse en composantes principales expliquent
 # environ 31% de la variance totale des données"
 
-# TODO réduire les 23 variables à 13 plus significatives (4 quali et 9 quanti à priori),
+# Réduire les 23 variables à 13 plus significatives (4 quali et 9 quanti à priori),
 # qual : Gender, Marital_Status, Income_Category, Education_Level
 # quant: Avg_Utilization_Ratio, Total_Ct_Chng_Q4_Q1, Total_Trans_Ct, Total_Trans_Amt, Total_Amt_Chng_Q4_Q1, Total_Revolving_Bal,
 # Months_Inactive_12_mon, Contacts_Count_12_mon, Total_Relationship_Count
-# faire une cAH et tatonner parmi les 13 pour trouver des clusters
+# même à 11 ? en retirant aussi avg_utilization_ratio et Total_Trans_Amt en cl de la corrélation de spearman ?
 
-data_k <- data %>% mutate_if(is.factor, as.numeric)
-data_kmeans <- scale(data_k[, c(-1, -2, -4, -8, -9, -13, -15)])
+# conversion quali ordinal en quanti
+data_numerized <- data %>% mutate_if(is.factor, as.numeric)
+data_numerized$Attrition_Flag[data_numerized$Attrition_Flag==1]<-0
+data_numerized$Attrition_Flag[data_numerized$Attrition_Flag==2]<-1
+
+# graphique de corrélation avec la variable cible Attrition_Flag seulement
+graph_target_correlation(data_numerized, "Attrition_Flag")
+
+# graphique de corrélations avec la méthode de spearman
+spearman_graph_correlation(data_numerized)
+
+# Retrait des colonnes qu'on considère inutiles
+# (variables dépendantes entre elles et du coup aussi dépendantes de la variable cible)
+# (variables indépendantes de la variable cible)
+# customer_age, dependent_count, card_category, months_on_book,
+# credit_limit, avg_open_to_buy, total_trans_amt, avg_utilization_ratio
+data_k <- data_numerized[, c(-2, -4, -8, -9, -13, -15, -17, -20)]
+# refaisons un graphique des corrélations entre chacune des 10 variables restantes
+spearman_graph_correlation(data_k)
+# ==> comme on a converti en numérique les variables quali,
+# on observe curieusement une forte corrélation entre le revenu entrant et le genre (0,79)
+# on notera une légère relation inverse entre Total_Relationship_Count et Total_Trans_Ct (-0,23)
+
+# attention, standardisation (centrage réduction) nécessaire des données au préalable
+data_kmeans <- scale(data.frame(data_k))
+
 # seed
 set.seed(123)
 
-# determining nb clusters with elbow method (very low)
-fviz_nbclust(data_kmeans, kmeans, method = "wss") +
-    geom_vline(xintercept = 4, linetype = 2)+
-    labs(subtitle = "Elbow method")
-# ==> 4 clusters
+# determining nb clusters with elbow method (warning very low)
+# observation de l'inertie intra-classe et recherche du "coude"
+# où l'adjonction d'une classe ne correspond à rien
+# (WARNING : LOW about 5 minute)
+estimate_nb_cluster(data_kmeans)
+# ==> donc 4 clusters devraient suffire
 
-# determining nb clusters with Silhouette method (quickly)
-fviz_nbclust(data_kmeans, kmeans, method = "silhouette")+
-    labs(subtitle = "Silhouette method")
-# ==> 2 clusters
+# KMEANS CLUSTERING en 4 groupes
+res.km <- kmeans(data_kmeans, centers = 4, nstart = 25)
 
-# determining nb clusters with gap statistics method (very very low)
-fviz_nbclust(data_kmeans, kmeans, nstart = 25, method = "gap_stat", nboot = 50)+
-    labs(subtitle = "Gap statistic method")
-# ==> 1 cluster
+# nuage de points des 4 clusters
+graphe_nuage_clusters(res.km, data_k)
 
-# if ("NbClust" %in% rownames(installed.packages()) == FALSE) {install.packages("NbClust", dependencies=TRUE)};library(NbClust)
-# nb <- NbClust(data_kmeans, distance = "euclidean", min.nc = 2,
-#               max.nc = 10, method = "kmeans")
+# graphe des nuage de points par paires de variables
+# (WARNING : LOW about 2 minute)
+pairs(data_kmeans, col=c(1:2)[res.km$cluster])
+# le income_category est central il est influé par 
+# Gender, Education_Level, Marital_Status
+# moins on est riche et plus on influe sur les autres variables quanti
 
-# Retrait du taux d'attrition & CLUSTERING en 4 groupes avec KMEANS
-res.km <- kmeans(data_kmeans, 4, nstart = 25)
-# RÉDUCTION DE DIMENSION À L'AIDE DU PCA
-# Réduction de chacune des 13 variables quantitatives à 13 groupe/dimension en utilisant l'ACP(prcomp)
-res.pca <- prcomp(data_kmeans, scale = FALSE)
+# Réduction de dimension à l'aide d'une ACP
+# Réduction de chacune des 11 variables quantitatives à 2 dimension en utilisant l'ACP(prcomp)
 
-# Coordonnées des individus
-ind.coord <- as.data.frame(factoextra::get_pca_ind(res.pca)$coord)
+res.pca <- prcomp(data_k[, c(-1)], scale = TRUE)
 
-# Ajouter des clusters obtenus à l'aide de l'algorithme K-means
-ind.coord$cluster <- factor(res.km$cluster)
+# Analyse étendue des dimensions des 4 clusters avec ACP
+graphe_acp_nuage_clusters(res.pca, res.km, data_numerized$Attrition_Flag)
+# eigenvalue variance.percent cumulative.variance.percent
+# Dim.1        1.8             16.4                        16.4
+# Dim.2        1.5             13.5                        29.9
+# Dim.3        1.3             11.8                        41.8
+# Dim.4        1.0              9.3                        51.1
+# Dim.5        1.0              9.1                        60.2
+# Dim.6        1.0              8.9                        69.1
 
-# Ajout de la variable cible à partir de l'ensemble de données d'origine
-ind.coord$target <- data$Attrition_Flag
-
-pca_cluster <- ind.coord %>%
-    group_by(target, cluster) %>%
-    count() %>%
-    as.data.frame()
-
-percentage_total <- pca_cluster %>%
-    group_by(target) %>%
-    summarise(per_tot=n/sum(n)*100)
-
-pca_cluster <- cbind(pca_cluster,'%'=round(percentage_total$per_tot,1))
-
-# Percentage of variance explained by dimensions
-eigenvalue <- round(get_eigenvalue(res.pca), 1)
-
-variance.percent <- eigenvalue$variance.percent
-
-c2 <- tableGrob(pca_cluster)
-
-c3 <- ggscatter(
-    ind.coord, x = "Dim.1", y = "Dim.2",
-    color = "cluster", palette = "npg", ellipse = TRUE, ellipse.type = "convex",
-    size = 1.5,  legend = "right", ggtheme = theme_bw(),
-    xlab = paste0("Dim 1 (", variance.percent[1], "% )" ),
-    ylab = paste0("Dim 2 (", variance.percent[2], "% )" )
-) +
-    stat_mean(aes(color = cluster), size = 4) +
-    theme_classic() +
-    theme(legend.position='top')
-
-my_gp <- grid::gpar(fontsize=18, font=1)
-my_top <- grid::textGrob("Kmeans cluster and PCA", gp=my_gp)
-gridExtra::grid.arrange(c2, c3, ncol=2, top=my_top)
-
+# cercle de corrélation
 fviz_pca_var(res.pca,
              col.var = "contrib", 
              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
              repel = TRUE     
 )
 
-#  "#494368", "#033f63"
-# factoextra::fviz_cluster(res.km, data = data_kmeans,
-#                          palette = c("#ceec97", "#f4b393", "#fc60a8", "#7a28cb"),
-#                          geom = "point",
-#                          ellipse.type = "convex",
-#                          ggtheme = theme_bw()
-# )
+# Que retire-t-on de ces 4 populations et réussir à trouver une interprétation
+# 6 dimensions ne parviennent pas à expliquer Plus de 70% de la variance ou masse totale d'inertie
+# de même leurs valeurs propres sont gtoutes supéreiyres ou égal à 1 (critère de Kaiser)
+# Les 2 premières dimensions représentent 30% de la variance
+# le cluster n°3 représente 98% de ceux qui sont partis (1595 / 1627 individus)
+# les cumuls de variance ne nous permettent pas ici d'obtenir pour le moment
+# une qualité globale explicative de l’analyse.
 
 # CONCLUSION
 
-# THe 5 top features of determing a customer's attrition:
-# Total Transaction Count
-# Total Revolving Balance
-# Total Transaction Amount
-# Total Relationship Count
-# Total Count Change
+# Retenons pour la réalisation des modèles que le top 5 des variables
+# déterminant le départ d'un client :
+# Total Transaction Count (Total_Trans_Ct)
+# Total Count Change (Total_Ct_Chng_Q4_Q1)
+# Total Revolving Balance (Total_Revolving_Bal)
+# Total Transaction Amount (Total_Trans_Amt)
+# Total Relationship Count (Total_Relationship_Count)
+
+# Nous pouvons tenter 3 modèles sur 
+# Gender
+# Income_Category
+# Total_Trans_Ct (discretisé) ?
+
 
 
 ### 7 - Régression logistique et AIC ----
 
 # partage du dataset en 70/30 
-intrain <- createDataPartition(data$Attrition_Flag, p=0.7, list = F, times = 1)
-# creation des datasets: testing (30%) & training (70%) pour minimiser le ridque de surentraienemnt 
-training <- data[intrain,]
-testing <- data[-intrain,]
+# intrain <- createDataPartition(data$Attrition_Flag, p=0.7, list = F, times = 1)
+# # creation des datasets: testing (30%) & training (70%) pour minimiser le ridque de surentraienemnt 
+# training <- data[intrain,]
+# testing <- data[-intrain,]
 
 # ---- modification des classes lorsqu'il y a des trop fort desequilibres
 
 # CLASSE => message d'erreur 
 
-data_select <- data[, c(-2, -4, -8, -9, -13, -15)]
-# classe_marital_class
-data_select[which(data_select$Marital_Status %in% c("Divorced","Single")),"Marital_Status"] <- "Single"
+# data_select <- data[, c(-2, -4, -8, -9, -13, -15)]
+# # classe_marital_class
+# data_select[which(data_select$Marital_Status %in% c("Divorced","Single")),"Marital_Status"] <- "Single"
 # Card_category_class
 #data_select[which(data_select$Card_Category %in% c("Gold","platinum","Silver")),"Card_Category"]<-"Others"
 # Income_category_class
 
-levels(data_select$Income_Category) = c(levels(data_select$Income_Category), "Less than $60K", "More than $60K")
-data_select[which(data_select$Income_Category %in% c("Less than $40K", "$40K - $60K")),"Income_Category"] <- "Less than $60K"
-data_select[which(data_select$Income_Category %in% c("$60K - $80K","$80K - $120K","$120K +")),"Income_Category"] <- "More than $60K"
-
-full.model <- lm(Attrition_Flag ~., data = data_select)
-summary(full.model)
-
-
+# levels(data_select$Income_Category) = c(levels(data_select$Income_Category), "Less than $60K", "More than $60K")
+# data_select[which(data_select$Income_Category %in% c("Less than $40K", "$40K - $60K")),"Income_Category"] <- "Less than $60K"
+# data_select[which(data_select$Income_Category %in% c("$60K - $80K","$80K - $120K","$120K +")),"Income_Category"] <- "More than $60K"
+# 
+# full.model <- lm(Attrition_Flag ~., data = data_select)
+# summary(full.model)
 
 
-model_quali<-glm(Attrition_Flag~Income_Category, data=data_select, family= binomial(logit))
+
+
+# model_quali<-glm(Attrition_Flag~Income_Category, data=data_select, family= binomial(logit))
 
 # Interprétation
 # model_quali
-summary(model_quali)
-exp(coef(model_quali))
-
-# Matrice de confusion
-appren.p <- cbind(data_reg, predict(model_quali, newdata = data_reg, type = "link", se = TRUE))
-appren.p <- within(appren.p, {
-    PredictedProb <- plogis(fit)
-    LL <- plogis(fit - (1.96 * se.fit))
-    UL <- plogis(fit + (1.96 * se.fit))
-})
-appren.p <- cbind(appren.p, pred.chd = factor(ifelse(appren.p$PredictedProb > 0.5, 1, 0)))
-colnames(appren.p)
-appren.p<-appren.p[,c("binattrition","Customer_Age","Card_Category","fit","PredictedProb","pred.chd")]
-(m.confusion <- as.matrix(table(appren.p$pred.chd, appren.p$binattrition)))
-
-# Taux de bien classé
-(m.confusion[1,1]+m.confusion[2,2]) / sum(m.confusion)
-
-# Sensibilité
-(m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
-
-# Sensibilité
-(m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
-
-# Spécificité
-(m.confusion[1,1]) / (m.confusion[1,1]+m.confusion[2,1])
-
-
-# ODs ratio
-exp(cbind(coef(model_quali), confint(model_quali)))
-library(questionr)
-odds.ratio(model_quali)
-install.packages("GGally")
-library(GGally)
-library(broom.helpers)
-ggcoef_model(model_quali, exponentiate = TRUE)
+# summary(model_quali)
+# exp(coef(model_quali))
+# 
+# # Matrice de confusion
+# appren.p <- cbind(data_reg, predict(model_quali, newdata = data_reg, type = "link", se = TRUE))
+# appren.p <- within(appren.p, {
+#     PredictedProb <- plogis(fit)
+#     LL <- plogis(fit - (1.96 * se.fit))
+#     UL <- plogis(fit + (1.96 * se.fit))
+# })
+# appren.p <- cbind(appren.p, pred.chd = factor(ifelse(appren.p$PredictedProb > 0.5, 1, 0)))
+# colnames(appren.p)
+# appren.p<-appren.p[,c("binattrition","Customer_Age","Card_Category","fit","PredictedProb","pred.chd")]
+# (m.confusion <- as.matrix(table(appren.p$pred.chd, appren.p$binattrition)))
+# 
+# # Taux de bien classé
+# (m.confusion[1,1]+m.confusion[2,2]) / sum(m.confusion)
+# 
+# # Sensibilité
+# (m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
+# 
+# # Sensibilité
+# (m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
+# 
+# # Spécificité
+# (m.confusion[1,1]) / (m.confusion[1,1]+m.confusion[2,1])
+# 
+# 
+# # ODs ratio
+# exp(cbind(coef(model_quali), confint(model_quali)))
+# library(questionr)
+# odds.ratio(model_quali)
+# install.packages("GGally")
+# library(GGally)
+# library(broom.helpers)
+# ggcoef_model(model_quali, exponentiate = TRUE)
 
 
 # Graphique des corrélations entre chacune des variables
@@ -754,7 +740,7 @@ part<-createDataPartition(data$Attrition_Flag,p=0.7,
 
 
 
-#Nouveau test regression
+# Nouveau test regression
 data$Attrition_Flag<-as.character(data$Attrition_Flag)
 data$Attrition_Flag[data$Attrition_Flag=="Existing Customer"]<-"Stay"
 data$Attrition_Flag[data$Attrition_Flag=="Attrited Customer"]<-"Quit"

@@ -153,3 +153,132 @@ search_cors <- function(data, data_stay, data_quit, quali_var) {
 
     cowplot::plot_grid(graphA, graphB, labels=c("A", "B"), ncol = 2, nrow = 1)
 }
+
+spearman_graph_correlation <- function(data) {
+    cor_spearman <-
+        cor(data[, sapply(data, is.numeric)], method = 'spearman')
+    
+    # Visualizing with a heatmap the correlation matrix with the pearson method
+    as.matrix(data.frame(cor_spearman)) %>%
+        round(3) %>% 
+        hchart() %>%
+        hc_add_theme(hc_theme_smpl()) %>%
+        hc_title(text = "Spearman's correlation coefficients", align = "center") %>%
+        hc_legend(align = "center") %>%
+        hc_colorAxis(stops = color_stops(colors = viridis::inferno(10))) %>%
+        hc_plotOptions(series = list(boderWidth = 0,
+                                     dataLabels = list(enabled = TRUE)))
+}
+
+estimate_nb_cluster <- function(scaled_df_data){
+    
+    # determining nb clusters with elbow method (warning very low)
+    # basée sur la minimisation de la somme des carrés des écarts à l’intérieur des clusters (SSwithin).
+    fviz_nbclust(scaled_df_data, kmeans, method = "wss") +
+        geom_vline(xintercept = 4, linetype = 2)+
+        labs(subtitle = "Elbow method")
+    
+    # determining nb clusters with Silhouette method (quickly)
+    # basée sur la maximisation du paramètre appelé “average silhouette”.
+    # fviz_nbclust(scaled_df_data, kmeans, method = "silhouette")+
+    #     labs(subtitle = "Silhouette method")
+    
+    # determining nb clusters with gap statistics method (very very low)
+    # basée sur la comparaison de la variation totale intra-cluster pour différentes valeurs de k
+    # avec leurs valeurs attendues sous une distribution de référence nulle des données.
+    # fviz_nbclust(scaled_df_data, kmeans, nstart = 25, method = "gap_stat", nboot = 50)+
+    #     labs(subtitle = "Gap statistic method")
+    
+    # if ("NbClust" %in% rownames(installed.packages()) == FALSE) {install.packages("NbClust", dependencies=TRUE)};library(NbClust)
+    # nb <- NbClust(scaled_df_data, distance = "euclidean", min.nc = 2,
+    #               max.nc = 10, method = "kmeans")
+}
+
+graphe_nuage_clusters <- function(kmeans_out, data_k){
+    # nuage de points des 4 clusters
+    # TODO variabiliser les couleurs
+    factoextra::fviz_cluster(kmeans_out, data = data_k,
+                             palette = c("#ceec97", "#f4b393", "#fc60a8", "#7a28cb"),
+                             geom = "point",
+                             ellipse.type = "convex",
+                             ggtheme = theme_bw()
+    )
+    # nuage de points des 4 clusters avec numéro des individus (peu lisible)
+    # factoextra::fviz_cluster(res.km, data_kmeans, ellipse.type = "norm")
+}
+
+graphe_acp_nuage_clusters <-  function(acp_out, kmeans_out, target_data){
+    # TODO variabiliser Attrition_Flag
+    
+    # Coordonnées des individus
+    ind.coord <- as.data.frame(factoextra::get_pca_ind(acp_out)$coord)
+    
+    # Ajouter des clusters obtenus à l'aide de l'algorithme K-means
+    ind.coord$cluster <- factor(kmeans_out$cluster)
+    
+    # Ajout de la variable cible à partir de l'ensemble de données d'origine
+    ind.coord$Attrition_Flag <- target_data
+    
+    # inspection des données
+    #print(head(ind.coord))
+    
+    # Pourcentage de la variance expliquée par les dimensions
+    eigenvalue <- round(get_eigenvalue(acp_out), 1)
+    variance.percent <- eigenvalue$variance.percent
+    print(head(eigenvalue))
+    
+    pca_cluster <- ind.coord %>%
+        group_by(Attrition_Flag, cluster) %>%
+        count() %>%
+        as.data.frame()
+    
+    percentage_total <- pca_cluster %>%
+        group_by(Attrition_Flag) %>%
+        summarise(per_tot=n/sum(n)*100)
+    
+    pca_cluster <- cbind(pca_cluster,'%'=round(percentage_total$per_tot,1))
+    
+    #c1 <- fviz_eig(acp_out)
+    
+    c2 <- tableGrob(pca_cluster)
+    
+    c3 <- ggscatter(
+        ind.coord, x = "Dim.1", y = "Dim.2",
+        color = "cluster", palette = "npg", ellipse = TRUE, ellipse.type = "convex",
+        size = 1.5,  legend = "right", ggtheme = theme_bw(),
+        xlab = paste0("Dim 1 (", variance.percent[1], "% )" ),
+        ylab = paste0("Dim 2 (", variance.percent[2], "% )" )
+    ) +
+        stat_mean(aes(color = cluster), size = 4) +
+        theme_classic() +
+        theme(legend.position='top')
+    
+    my_gp <- grid::gpar(fontsize=18, font=1)
+    my_top <- grid::textGrob("Kmeans cluster and PCA", gp=my_gp)
+    gridExtra::grid.arrange(c2, c3, ncol=2, top=my_top)
+}
+
+# target var is first column, df is only with numeric types (not factors)
+graph_target_correlation <- function(df, target_var_name){
+    # correlations
+    correlation = cor(df)
+    # correlation as data.frame
+    target_corr = as.data.frame(correlation[,1])
+    # correlation column name
+    colnames(target_corr) <- 'Correlation'
+    # sort dataframe
+    target_corr <- target_corr %>% arrange(desc(Correlation))
+    # exclude target
+    target_corr <- target_corr %>% filter(Correlation<1) 
+    # round
+    target_corr <- round(target_corr, 2)
+    
+    # PLOT CORRELATION
+    target_corr %>% arrange(desc(Correlation)) %>%
+        ggplot(aes(x=Correlation,
+                   y=reorder(rownames(target_corr),Correlation),
+                   fill=Correlation)) +
+        geom_col(color='black') + labs(title=paste(target_var_name, ' Correlation'), y='') +
+        theme_classic() +
+        theme(legend.position = 'none')
+}
