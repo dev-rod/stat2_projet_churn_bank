@@ -594,10 +594,10 @@ fviz_pca_var(res.pca,
 
 # Que retire-t-on de ces 4 populations et réussir à trouver une interprétation
 # 6 dimensions ne parviennent pas à expliquer Plus de 70% de la variance ou masse totale d'inertie
-# de même leurs valeurs propres sont gtoutes supéreiyres ou égal à 1 (critère de Kaiser)
+# de même leurs valeurs propres sont toutes supérieures ou égales à 1 (critère de Kaiser)
 # Les 2 premières dimensions représentent 30% de la variance
 # le cluster n°3 représente 98% de ceux qui sont partis (1595 / 1627 individus)
-# les cumuls de variance ne nous permettent pas ici d'obtenir pour le moment
+# CL : les cumuls de variance ne nous permettent pas ici d'obtenir pour le moment
 # une qualité globale explicative de l’analyse.
 
 # CONCLUSION
