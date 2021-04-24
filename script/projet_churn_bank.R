@@ -17,6 +17,14 @@
 # fonctions du projet medas
 source('script/functions.R')
 load_libraries()
+# install.packages("C:/Users/CFOUQUE/Desktop/questionr_0.7.4.zip", repos = NULL, type = "win.binary")
+
+# si besoin de supprimer un package
+# remove.packages(pkgs, lib)
+#     Arguments 
+#     pkgs    a character vector with the names of the packages to be removed.
+#     lib	    a character vector giving the library directories to remove the packages from. 
+#              If missing, defaults to the first element in .libPaths().
 
 ##################################################################################-
 # 2 - Import des données ----
@@ -48,9 +56,9 @@ length(unique(data$CLIENTNUM))
 str(data)
 
 ##### la variable explicative : Attrition_Flag ( Factor )
-# C'est une vartiable qualitative, le modele a utiliser est donc une regression logistique=> regression logistique
+# C'est une vartiable qualitative, le modele a utiliser est donc une regression logistique
 summary(data)
-print (skim(data))
+print (View(skim(data)))
 
 # ---les 5 variables qualitatives
 # 1 Card_Category           : Factor
@@ -109,18 +117,36 @@ data$Card_Category <- fct_relevel(data$Card_Category, "Blue", "Silver", "Gold", 
 
 # verif :
 # str(data)
-# skim(data)
+# View(skim(data)
 
 #### 3.3 - stats des partis et restés ----
 data_quit <- data[(data$Attrition_Flag) == 1, ]
-skim(data_quit)
+View(skim(data_quit))
 str(data_quit)
 # 1627 partis
 
 data_stay <- data[(data$Attrition_Flag) == 0, ]
-skim(data_stay)
+View(View(skim(data_stay)))
 str(data_stay)
 # 8500 restés
+
+#### 3.3.1 - Echantillonnage de 1000 restant et 1000 partant ----
+
+sample_quit<-sample(1:dim(data_quit)[1],1000)
+sample_stay<-sample(1:dim(data_stay)[1],1000)
+
+data_reg<-rbind(data_quit[sample_quit,],data_stay[sample_stay,])
+View(skim(data_reg))
+
+# data_reg_quit
+data_reg_quit <- data_reg[(data_reg$Attrition_Flag) == 1, ]
+View(skim(data_reg_quit))
+str(data_reg_quit)
+
+# data_reg_stay 
+data_reg_stay <- data_reg[(data_reg$Attrition_Flag) == 0, ]
+View(skim(data_reg_stay))
+str(data_reg_stay)
 
 ### 3.4 - 5 variables qualitatives : Analyse ----
 # Tableaux de frequences par Attrition_Flag
@@ -128,14 +154,16 @@ str(data_stay)
 # et exclure les variables sans intérêt
 
 #### 3.4.1 - Gender ----
-search_cors(data, data_stay, data_quit, "Gender")
+# search_cors(data, data_stay, data_quit, "Gender")
+search_cors(data, data_reg_stay, data_reg_quit, "Gender")
 # parmi Existing Customer "0.521" soit 52.1 % 
 # Attrited Customers : "0.572" soit 57.2 %
 # 57 % des personnes qui ont fermé leur compte sont des femmes tandis que 52 % des clients actifs sont des femmes.
 # Les femmes sont donc en sur representation parmi les desabonnés avec une différence de proportion de 5%.
 
 #### 3.4.2 - Marital_Status ----
-search_cors(data, data_stay, data_quit, "Marital_Status")
+# search_cors(data, data_stay, data_quit, "Marital_Status")
+search_cors(data, data_reg_stay, data_reg_quit, "Marital_Status")
 # "0.074" "0.074" => parmi les divorcés on retrouve la meme proportion de clients qui partent que ceux qui restent.
 # "0.073" "0.079" => parmi les statut inconnus on retrouve une proportion tres legerement plus elevée de clients qui partent  (+0.6%)
 # => peu de différence de proportion pour les divorcés et les statuts inconnus.
@@ -144,7 +172,8 @@ search_cors(data, data_stay, data_quit, "Marital_Status")
 #  = > il peut etre interessant de regrouper les classes divorcés et Unknown qui semblent avoir des proportions identiques
 
 #### 3.4.3 - Card_Category  ----
-search_cors(data, data_stay, data_quit, "Card_Category")
+# search_cors(data, data_stay, data_quit, "Card_Category")
+search_cors(data, data_reg_stay, data_reg_quit, "Card_Category")
 #  la proportion de catégorie de carte ne semble pas être tres différente entre abonnés et desabonnés
 #  On observe pour ratio_Silver que la plus grosse différence de pourcentage dans les deux groupes est de 0.6 %.
 #  "0.931" "0.934" => parmi les clients "carte Blue" peu de différence entre clients qui partent et qui restent (+0.03%)
@@ -153,7 +182,8 @@ search_cors(data, data_stay, data_quit, "Card_Category")
 # "0.002" "0.003" => parmi les clients "carte Platinum" peu de différence entre clients qui partent et qui restent (+0.1%)
 
 #### 3.4.4 - Income_Category ----
-search_cors(data, data_stay, data_quit, "Income_Category")
+# search_cors(data, data_stay, data_quit, "Income_Category")
+search_cors(data, data_reg_stay, data_reg_quit, "Income_Category")
 # 6 classes : $120K +, $40K - $60K, $60K - $80K, $80K - $120K, Less than $40K, Unknown
 #  "0.347" "0.376"  parmi les "Less than $40K" la proportion est  plus fortes pour les desabonnés  (+3 %)
 #  "0.179" "0.167" parmi les "$40K - $60K" on observe une proportion legerement plus faible chez les desabonnés (-1.2%)
@@ -166,7 +196,8 @@ search_cors(data, data_stay, data_quit, "Income_Category")
 # les revenus moyens ("40-80 K$") : on observe une différence de 1.2 % et 2.7 % des abonnés parmi l'ensemble des abonnés
 
 #### 3.4.5 - Education_Level ----
-search_cors(data, data_stay, data_quit, "Education_Level")
+# search_cors(data, data_stay, data_quit, "Education_Level")
+search_cors(data, data_reg_stay, data_reg_quit, "Education_Level")
 # Unknown, Uneducated, High School, College, Graduate, Post-Graduate, Doctorate
 # "0.147" "0.146" tres légère différence de ratio parmi les "Uneducated", un peu moins de desabonnés (-0.1%)
 # "0.201" "0.188" (-1.3) légere différence de ratio parmi les "High School", un peu moins de desabonnés(-1.3%)
@@ -180,33 +211,12 @@ search_cors(data, data_stay, data_quit, "Education_Level")
 # Il semble que le niveau d'etude relativement élevé (graduate, post graduate et doctorate) facilite de depart de la banque.
 # parmi les " unknow on trouve une tres legere surrepresentation des desabonnés
 
-# en résumé
+# En résumé----
 # qui partira le + : une femme célibataire à bas revenu (<40 K$) avec un niveau d'éducation très élevé
 # qui restera le + : un homme marié à revenu moyen (40-80K$) avec un niveau d'éducation intermédiaire
-# On retiendra Gender, Marital_Status, Income_Category, Education_Level
+# On retiendra Gender, Marital_Status, Income_Category et Education_Level
 
 ### 3.5 - 14 variables quantitatives : Analyse ----
-
-#### 3.5.1 - Echantillonnage de 1000 restant et 1000 partant ----
-sample_quit<-sample(1:dim(data_quit)[1],1000)
-sample_stay<-sample(1:dim(data_stay)[1],1000)
-
-# TODO le fait de ne plus disposer du ratio de nombre de partant sur totalité de l'échantillon ne va-t-il pas impacter 
-# la régression logistique finale ?
-data_reg<-rbind(data_quit[sample_quit,],data_stay[sample_stay,])
-skim(data_reg)
-
-
-# data_reg_quit
-# TODO finalement c'est sample_quit en fait non ?
-data_reg_quit <- data_reg[(data_reg$Attrition_Flag) == 1, ]
-skim(data_reg_quit)
-str(data_reg_quit)
-# data_reg_stay 
-# TODO finalement c'est sample_stay en fait non ?
-data_reg_stay <- data_reg[(data_reg$Attrition_Flag) == 0, ]
-skim(data_reg_stay)
-str(data_reg_stay)
 
 #### COMPARAISON DES 2 POPULATIONS
 # les effectifs sont différentS on procede par comparaison de moyenne => Test de Student ou de Wilcoxon
@@ -221,12 +231,12 @@ str(data_reg_stay)
     # boxplot variable en fonction de Attrition_Flag
     # plot de la variable par Attrition_Flag
 # + statistiques descriptives des deux echantillons: Min.,1st Qu.,Median,Mean,3rd Qu.,Max.
-# + rquery_t_test => qui donne le resultat du test si l'ensemble des critères est respecté
+# + rquery_t_test => qui donne le resultat du test si l'ensemble des critères est respecté (meme variance et distribution selon une loi normale)
 # + test de wilcoxon si l'un des deux échantillons ne respecte pas la loi normale
-source('script/functions.R')
-load_libraries()
+
 #### 3.5.2 - Customer_Age ----
-desc_stat(data, data_stay, data_quit, "Customer_Age", "Attrition_Flag")
+# desc_stat(data, data_stay, data_quit, "Customer_Age", "Attrition_Flag")
+desc_stat(data, data_reg_stay, data_reg_quit, "Customer_Age", "Attrition_Flag")
 test_stat(data_reg_stay, data_reg_quit, "Customer_Age", c("stay", "quit"))
 # summary(data_stay$Customer_Age)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
@@ -240,7 +250,8 @@ test_stat(data_reg_stay, data_reg_quit, "Customer_Age", c("stay", "quit"))
 # WILCOXON => W = 511132, p-value = 0.3884 => Les deux échantillons ne sont pas significativement différents.
 
 #### 3.5.3 - Dependent_count ----
-desc_stat(data, data_stay, data_quit, "Dependent_count", "Attrition_Flag")
+# desc_stat(data, data_stay, data_quit, "Dependent_count", "Attrition_Flag")
+desc_stat(data, data_reg_stay, data_reg_quit, "Dependent_count", "Attrition_Flag")
 test_stat(data_reg_stay, data_reg_quit, "Dependent_count", c("stay", "quit"))
 # summary(data_stay$Dependent_count)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
@@ -252,10 +263,11 @@ test_stat(data_reg_stay, data_reg_quit, "Dependent_count", c("stay", "quit"))
 # variance data_quit$Dependent_count => 1.625651
 # STUDENT => Use a non parametric test like Wilcoxon test.
 # WILCOXON => W = 513114, p-value = 0.2975 => Les deux échantillons ne sont pas significativement différents.
-# TODO on a des valeurs aberrantes on dirait sur ceux qui sont restés
+
 
 #### 3.5.4 - Months_on_book ----
-desc_stat(data, data_stay, data_quit, "Months_on_book", "Attrition_Flag")
+# desc_stat(data, data_stay, data_quit, "Months_on_book", "Attrition_Flag")
+desc_stat(data, data_reg_stay, data_reg_quit, "Months_on_book", "Attrition_Flag")
 test_stat(data_reg_stay, data_reg_quit, "Months_on_book", c("stay", "quit"))
 # summary(data_stay$Months_on_book)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
@@ -271,7 +283,8 @@ test_stat(data_reg_stay, data_reg_quit, "Months_on_book", c("stay", "quit"))
 # WILCOXON => W = 509041, p-value = 0.4808 => Les deux échantillons ne sont pas significativement différents.
 
 #### 3.5.5 - Total_Relationship_Count ----
-desc_stat(data, data_stay, data_quit, "Total_Relationship_Count", "Attrition_Flag")
+# desc_stat(data, data_stay, data_quit, "Total_Relationship_Count", "Attrition_Flag")
+desc_stat(data, data_reg_stay, data_reg_quit, "Total_Relationship_Count", "Attrition_Flag")
 test_stat(data_reg_stay, data_reg_quit, "Total_Relationship_Count", c("stay", "quit"))
 # summary(data_stay$Total_Relationship_Count)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
@@ -287,7 +300,8 @@ test_stat(data_reg_stay, data_reg_quit, "Total_Relationship_Count", c("stay", "q
 # WILCOXON => W = 374438, p-value < 2.2e-16 => Les deux échantillons sont significativement différents.
 
 #### 3.5.6 - Months_Inactive_12_mon ----
-desc_stat(data, data_stay, data_quit, "Months_Inactive_12_mon", "Attrition_Flag")
+# desc_stat(data, data_stay, data_quit, "Months_Inactive_12_mon", "Attrition_Flag")
+desc_stat(data, data_reg_stay, data_reg_quit, "Months_Inactive_12_mon", "Attrition_Flag")
 test_stat(data_reg_stay, data_reg_quit, "Months_Inactive_12_mon", c("stay", "quit"))
 # > summary(data_stay$Months_Inactive_12_mon)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
@@ -303,7 +317,8 @@ test_stat(data_reg_stay, data_reg_quit, "Months_Inactive_12_mon", c("stay", "qui
 # WILCOXON => W = 634140, p-value < 2.2e-16 => Les deux échantillons sont significativement différents.
 
 #### 3.5.7 - Contacts_Count_12_mon ----
-desc_stat(data, data_stay, data_quit, "Contacts_Count_12_mon", "Attrition_Flag")
+# desc_stat(data, data_stay, data_quit, "Contacts_Count_12_mon", "Attrition_Flag")
+desc_stat(data, data_reg_stay, data_reg_quit, "Contacts_Count_12_mon", "Attrition_Flag")
 test_stat(data_reg_stay, data_reg_quit, "Contacts_Count_12_mon", c("stay", "quit"))
 # summary(data_stay$Contacts_Count_12_mon)
 # # Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
@@ -319,7 +334,8 @@ test_stat(data_reg_stay, data_reg_quit, "Contacts_Count_12_mon", c("stay", "quit
 # WILCOXON => w = 662803, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
 
 #### 3.5.8 - Credit_Limit ----
-desc_stat(data, data_stay, data_quit, "Credit_Limit", "Attrition_Flag")
+# desc_stat(data, data_stay, data_quit, "Credit_Limit", "Attrition_Flag")
+desc_stat(data, data_reg_stay, data_reg_quit, "Credit_Limit", "Attrition_Flag")
 test_stat(data_reg_stay, data_reg_quit, "Credit_Limit", c("stay", "quit"))
 # summary(data_stay$Credit_Limit)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
@@ -335,7 +351,8 @@ test_stat(data_reg_stay, data_reg_quit, "Credit_Limit", c("stay", "quit"))
 # WILCOXON => W = 465106, p-value = 0.006881=> Les deux échantillons ne sont pas significativement différents.
 
 #### 3.5.9 - Total_Revolving_Bal ----
-desc_stat(data, data_stay, data_quit, "Total_Revolving_Bal", "Attrition_Flag")
+# desc_stat(data, data_stay, data_quit, "Total_Revolving_Bal", "Attrition_Flag")
+desc_stat(data, data_reg_stay, data_reg_quit, "Total_Revolving_Bal", "Attrition_Flag")
 test_stat(data_reg_stay, data_reg_quit, "Total_Revolving_Bal", c("stay", "quit"))
 # summary(data_stay$Total_Revolving_Bal)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
@@ -352,7 +369,8 @@ test_stat(data_reg_stay, data_reg_quit, "Total_Revolving_Bal", c("stay", "quit")
 # W = 324850, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
 
 #### 3.5.10 - Avg_Open_To_Buy ----
-desc_stat(data, data_stay, data_quit, "Avg_Open_To_Buy", "Attrition_Flag")
+# desc_stat(data, data_stay, data_quit, "Avg_Open_To_Buy", "Attrition_Flag")
+desc_stat(data, data_reg_stay, data_reg_quit, "Avg_Open_To_Buy", "Attrition_Flag")
 test_stat(data_reg_stay, data_reg_quit, "Avg_Open_To_Buy", c("stay", "quit"))
 # > summary(data_stay$Avg_Open_To_Buy)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
@@ -368,7 +386,8 @@ test_stat(data_reg_stay, data_reg_quit, "Avg_Open_To_Buy", c("stay", "quit"))
 # WILCOXON => W = 521333, p-value = 0.09853 => Les deux échantillons  ne sont pas significativement différents.
 
 #### 3.5.11 - Total_Amt_Chng_Q4_Q1 ----
-desc_stat(data, data_stay, data_quit, "Total_Amt_Chng_Q4_Q1", "Attrition_Flag")
+# desc_stat(data, data_stay, data_quit, "Total_Amt_Chng_Q4_Q1", "Attrition_Flag")
+desc_stat(data, data_reg_stay, data_reg_quit, "Total_Amt_Chng_Q4_Q1", "Attrition_Flag")
 test_stat(data_reg_stay, data_reg_quit, "Total_Amt_Chng_Q4_Q1", c("stay", "quit"))
 # > summary(data_stay$Total_Amt_Chng_Q4_Q1)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
@@ -384,13 +403,15 @@ test_stat(data_reg_stay, data_reg_quit, "Total_Amt_Chng_Q4_Q1", c("stay", "quit"
 # WILCOXON => W = 414090, p-value = 2.874e-11=> Les deux échantillons sont significativement différents.
 
 #### 3.5.12 - Total_Trans_Amt ----
-desc_stat(data, data_stay, data_quit, "Total_Trans_Amt", "Attrition_Flag")
+# desc_stat(data, data_stay, data_quit, "Total_Trans_Amt", "Attrition_Flag")
+desc_stat(data, data_reg_stay, data_reg_quit, "", "Attrition_Flag")
 test_stat(data_reg_stay, data_reg_quit, "Total_Trans_Amt", c("stay", "quit"))
 # STUDENT => Use a non parametric test like Wilcoxon test.
 # WILCOXON => W = 345364, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
 
 #### 3.5.13 - Total_Trans_Ct ----
-desc_stat(data, data_stay, data_quit, "Total_Trans_Ct", "Attrition_Flag")
+# desc_stat(data, data_stay, data_quit, "Total_Trans_Ct", "Attrition_Flag")
+desc_stat(data, data_reg_stay, data_reg_quit, "", "Attrition_Flag")
 test_stat(data_reg_stay, data_reg_quit, "Total_Trans_Ct", c("stay", "quit"))
 # > summary(data_stay$Total_Trans_Ct)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
@@ -405,24 +426,27 @@ test_stat(data_reg_stay, data_reg_quit, "Total_Trans_Ct", c("stay", "quit"))
 # STUDENT => Use a non parametric test like Wilcoxon test.
 # WILCOXON => W = 225446, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
 
-#### 3.5.13.1 - Comparaison Total_Trans_Ct & Total_Trans_Amt ----
-# tentative comparaison distributions montant et volume de transactions sur partis et restés, mais axes pas clairs
-p1 <- data %>%
-    select(Total_Trans_Ct,Attrition_Flag) %>%
-    ggplot(aes(x=Total_Trans_Ct,fill=Attrition_Flag)) +
-    geom_bar(alpha=0.4,position="dodge") +
-    labs(title="Distribution of Total Transaction Count by Customer type", x="Total Transaction Count", y="Count")
-p2 <- data %>%
-    select(Total_Trans_Amt,Attrition_Flag) %>%
-    ggplot(aes(x=Total_Trans_Amt,fill=Attrition_Flag)) +
-    geom_density(alpha=0.4) +
-    labs(title="Distribution of Total Transaction Amount by Customer type", x="Total Transaction Amount", y="Density")
-grid.arrange(p1, p2, nrow = 2)
-# juste un test de graph gridding a priori, on garde ou pas ? peu pertinent à priori, les axes ne sont pas clairs
+#### 3.5.13.1 -  Total_Trans_Ct & Total_Trans_Amt ----
+# require(MASS)
+# require(dplyr)
+# 
+# p1 <- data %>%
+#     dplyr::select(Total_Trans_Ct,Attrition_Flag) %>%
+#     ggplot(aes(x=Total_Trans_Ct,fill=Attrition_Flag)) +
+#     geom_bar(alpha=0.4,position="dodge") +
+#     labs(title="Distribution of Total Transaction Count by Customer type", x="Total Transaction Count", y="Count")
+# p2 <- data %>%
+#     dplyr::select(Total_Trans_Amt,Attrition_Flag) %>%
+#     ggplot(aes(x=Total_Trans_Amt,fill=Attrition_Flag)) +
+#     geom_density(alpha=0.4) +
+#     labs(title="Distribution of Total Transaction Amount by Customer type", x="Total Transaction Amount", y="Density")
+# grid.arrange(p1, p2, nrow = 2)
+
 
 #### 3.5.14 - Total_Ct_Chng_Q4_Q1 ---- 
-desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Total_Ct_Chng_Q4_Q1", "Attrition_Flag")
-test_stat(data_reg_stay, data_reg_quit, "Total_Ct_Chng_Q4_Q1")
+# desc_stat(data,data_stay, data_quit, "Total_Ct_Chng_Q4_Q1", "Attrition_Flag")
+desc_stat(data, data_reg_stay, data_reg_quit, "Total_Ct_Chng_Q4_Q1", "Attrition_Flag")
+test_stat(data_reg_stay, data_reg_quit,"Total_Ct_Chng_Q4_Q1",c("stay", "quit"))
 # > summary(data_stay$Total_Ct_Chng_Q4_Q1)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 0.0280  0.6170  0.7210  0.7424  0.8330  3.7140 
@@ -437,7 +461,8 @@ test_stat(data_reg_stay, data_reg_quit, "Total_Ct_Chng_Q4_Q1")
 # WILCOXON => W = 263315, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
 
 #### 3.5.15 - Avg_Utilization_Ratio ----
-desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Avg_Utilization_Ratio", "Attrition_Flag")
+# desc_stat(data, data_reg_stay, data_reg_quit, data_stay, data_quit, "Avg_Utilization_Ratio", "Attrition_Flag")
+desc_stat(data, data_reg_stay, data_reg_quit, "Avg_Utilization_Ratio", "Attrition_Flag")
 test_stat(data_reg_stay, data_reg_quit, "Avg_Utilization_Ratio")
 # > summary(data_stay$Avg_Utilization_Ratio)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
@@ -496,6 +521,119 @@ ggplot(data, aes(x=Total_Trans_Amt, y= Total_Trans_Ct)) + geom_point(color = "re
 # Total Revovlving Balance and Average Utilization Ratio are correlated (0.62)
 ggplot(data, aes(x=Total_Revolving_Bal, y= Avg_Utilization_Ratio)) + geom_point(color = "blue",size= 0.3) + theme_classic() + ggtitle("Total Revolving Bal vs Avg Utilization Ratio")
 # qu'en retire-t-on ??
+
+# --------autre visualisation des corrélations
+# correlation des variables avec Attriction_Flag  dans l'ordre decroissant
+# mutates
+data_corr <- data %>% mutate_if(is.factor,as.numeric)
+# compute correlation 
+correlation= cor(data_corr)
+correlation
+# correlation as data.frame d'une colonne : Attriction_Flag
+target_corr= as.data.frame(correlation[,1])
+# correlation column name
+colnames(target_corr) <-'Correlation'
+# sort dataframe
+target_corr <- abs(target_corr )%>% arrange(desc(Correlation))
+# exclude target
+ target_corr <- target_corr %>% filter(Correlation<1) 
+# round
+target_corr <- round(target_corr,2)
+# LITE DES VARIABLES DANS L'ORDRE DE LEUR CORRELATION
+target_corr
+
+# Total_Trans_Ct                  0.37
+# Total_Ct_Chng_Q4_Q1             0.29
+# Total_Revolving_Bal             0.26
+# Contacts_Count_12_mon           0.20
+# Avg_Utilization_Ratio           0.18
+# Total_Trans_Amt                 0.17
+# Months_Inactive_12_mon          0.15
+# Total_Relationship_Count        0.15
+# Total_Amt_Chng_Q4_Q1            0.13
+# Gender                          0.04
+# Credit_Limit                    0.02
+# Dependent_count                 0.02
+# Marital_Status                  0.02
+# Customer_Age                    0.02
+# Income_Category                 0.02
+# Months_on_book                  0.01
+# Card_Category                   0.01
+# Education_Level                 0.01
+# Avg_Open_To_Buy                 0.00
+
+# PLOT CORRELATION
+target_corr %>% arrange(desc(Correlation)) %>%
+    ggplot(aes(x=Correlation,
+               y=reorder(rownames(target_corr),Correlation),
+               fill=Correlation)) +
+    geom_col(color='black') + labs(title='Corrélation avec Attriction_Flag en valeur absolue',y='') +
+    theme_classic() +
+    theme(legend.position = 'none')
+
+# si on veut connaitre le signe et le voir
+ 
+# mutates
+data_corr <- data %>% mutate_if(is.factor,as.numeric)
+# compute correlation
+correlation= cor(data_corr)
+correlation
+# correlation as data.frame d'une colonne : Attriction_Flag
+target_corr= as.data.frame(correlation[,1])
+# correlation column name
+colnames(target_corr) <-'Correlation'
+# sort dataframe
+target_corr <- (target_corr )%>% arrange(desc(Correlation))
+# exclude target
+target_corr <- target_corr %>% filter(Correlation<1)
+# round
+target_corr <- round(target_corr,2)
+target_corr
+# PLOT CORRELATION
+target_corr %>% arrange(desc(Correlation)) %>%
+    ggplot(aes(x=Correlation,
+               y=reorder(rownames(target_corr),Correlation),
+               fill=Correlation)) +
+    geom_col(color='black') + labs(title='Corrélation avec Attriction_Flag, en tenant compte du signe',y='') +
+    theme_classic() +
+    theme(legend.position = 'none')
+# on obtient :
+# Correlation
+# Contacts_Count_12_mon           0.20
+# Months_Inactive_12_mon          0.15
+# Dependent_count                 0.02
+# Marital_Status                  0.02
+# Customer_Age                    0.02
+# Income_Category                 0.02
+# Months_on_book                  0.01
+# Education_Level                 0.01
+# Avg_Open_To_Buy                 0.00
+# Card_Category                  -0.01
+# Credit_Limit                   -0.02
+# Gender                         -0.04
+# Total_Amt_Chng_Q4_Q1           -0.13
+# Total_Relationship_Count       -0.15
+# Total_Trans_Amt                -0.17
+# Avg_Utilization_Ratio          -0.18
+# Total_Revolving_Bal            -0.26
+# Total_Ct_Chng_Q4_Q1            -0.29
+# Total_Trans_Ct                 -0.37
+
+
+# Transations amounts versus counts
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ### 5 - Réaliser des ACM sur Attrition_flag ----
 # http://www.sthda.com/french/articles/38-methodes-des-composantes-principales-dans-r-guide-pratique/74-afc-analyse-factorielle-des-correspondances-avec-r-l-essentiel/
@@ -700,33 +838,6 @@ install.packages("GGally")
 library(GGally)
 library(broom.helpers)
 ggcoef_model(model_quali, exponentiate = TRUE)
-
-
-# Graphique des corrélations entre chacune des variables
-# mutates
-# data_corr <- data_clean %>% mutate_if(is.factor, as.numeric)
-# data_colnames <- colnames(data_clean)
-# data_colnames
-# # compute correlation
-# correlation= cor(data_corr)
-# # correlation as data.frame
-# target_corr= as.data.frame(correlation[,1])
-# rownames(target_corr)<-data_colnames
-# # correlation column name
-# colnames(target_corr) <-'Correlation'
-# # sort dataframe
-# target_corr <- target_corr %>% arrange(desc(Correlation))
-# # exclude target
-# target_corr <- target_corr %>% filter(Correlation<1)
-# # round
-# target_corr <- round(target_corr,2)
-# target_corr %>% arrange(desc(Correlation)) %>%
-#     ggplot(aes(x=Correlation,
-#                y=reorder(rownames(target_corr), Correlation),
-#                fill=Correlation)) +
-#     geom_col(color='black') + labs(title='Target Correlation', y='Variables') +
-#     theme_classic() +
-#     theme(legend.position = 'none')
 
 
 #Model complet test

@@ -10,6 +10,7 @@ load_libraries <- function(){
     # along with their variances, confidence intervals and p-values
     if ("compute.es" %in% rownames(installed.packages()) == FALSE) {install.packages("compute.es", dependencies=TRUE)};library(compute.es)
     # Graphical and tabular effect displays, e.g., of interactions, for various statistical models with linear predictors.
+    if ("insight" %in% rownames(installed.packages()) == FALSE) {install.packages("insight", dependencies=TRUE)};library(effects)
     if ("effects" %in% rownames(installed.packages()) == FALSE) {install.packages("effects", dependencies=TRUE)};library(effects)
     # Create Elegant Data Visualisations Using the Grammar of Graphics
     if ("ggplot2" %in% rownames(installed.packages()) == FALSE) {install.packages("ggplot2", dependencies=TRUE)};library(ggplot2)
@@ -46,6 +47,9 @@ load_libraries <- function(){
     if ("caret" %in% rownames(installed.packages()) == FALSE) {install.packages("caret", dependencies=TRUE)};library(caret)
     if ("pROC" %in% rownames(installed.packages()) == FALSE) {install.packages("pROC", dependencies=TRUE)};library(pROC)
     if ("ROCR" %in% rownames(installed.packages()) == FALSE) {install.packages("ROCR", dependencies=TRUE)};library(ROCR)
+    
+    if ("questionr" %in% rownames(installed.packages()) == FALSE) {install.packages("questionr", dependencies=TRUE)};library(questionr) 
+    # install.packages("C:/Users/CFOUQUE/Desktop/questionr_0.7.4.zip", repos = NULL, type = "win.binary")
     
     # pour le probleme de CONFLIT de select() entre les deux librairies MASS et dplyr
     require(MASS)
