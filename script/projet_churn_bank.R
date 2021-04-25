@@ -511,7 +511,7 @@ cor_spearman <-
     round(3) %>% 
     hchart() %>%
     hc_add_theme(hc_theme_smpl()) %>%
-    hc_title(text = "Spearman's correlation coefficients", align = "center") %>%
+    hc_title(text = "Matrice de corrélation de Spearman", align = "center") %>%
     hc_legend(align = "center") %>%
     hc_colorAxis(stops = color_stops(colors = viridis::inferno(10))) %>%
     hc_plotOptions(series = list(boderWidth = 0,
@@ -537,7 +537,8 @@ ggplot(data, aes(x=Avg_Utilization_Ratio, y=Total_Revolving_Bal)) + geom_point(c
 # ==> Cela nous donne des piste de simplification du modele de regression logistique pour le rendre plus robuste
 
 ### 4.2 - Graphique des corrélations entre l'Attrition_Flag et les autres variables ----
-# correlation des variables avec Attriction_Flag  dans l'ordre decroissant
+
+# correlation des variables avec Attriction_Flag  dans l'ordre decroissant (VALEUR ABSOLUE)
 # mutates
 data_corr <- data %>% mutate_if(is.factor,as.numeric)
 # compute correlation 
@@ -557,14 +558,14 @@ target_corr <- round(target_corr,2)
 target_corr
 
 # RESULTATS :
-    # Total_Trans_Ct                  0.37
-    # Total_Ct_Chng_Q4_Q1             0.29
-    # Total_Revolving_Bal             0.26
+    # Total_Trans_Ct                  0.37 # Total Transaction Count
+    # Total_Ct_Chng_Q4_Q1             0.29 # Total Count Change
+    # Total_Revolving_Bal             0.26 # Total Revolving Balance
     # Contacts_Count_12_mon           0.20
     # Avg_Utilization_Ratio           0.18
-    # Total_Trans_Amt                 0.17
+    # Total_Trans_Amt                 0.17 # Total Transaction Amount
     # Months_Inactive_12_mon          0.15
-    # Total_Relationship_Count        0.15
+    # Total_Relationship_Count        0.15 # Total Relationship Count
     # Total_Amt_Chng_Q4_Q1            0.13
     # Gender                          0.04
     # Credit_Limit                    0.02
@@ -586,32 +587,32 @@ target_corr %>% arrange(desc(Correlation)) %>%
     theme_classic() +
     theme(legend.position = 'none')
 
-# si on veut connaitre le signe et le voir
- 
-# mutates
-data_corr <- data %>% mutate_if(is.factor,as.numeric)
-# compute correlation
-correlation= cor(data_corr)
-correlation
-# correlation as data.frame d'une colonne : Attriction_Flag
-target_corr= as.data.frame(correlation[,1])
-# correlation column name
-colnames(target_corr) <-'Correlation'
-# sort dataframe
-target_corr <- (target_corr )%>% arrange(desc(Correlation))
-# exclude target
-target_corr <- target_corr %>% filter(Correlation<1)
-# round
-target_corr <- round(target_corr,2)
-target_corr
-# PLOT CORRELATION
-target_corr %>% arrange(desc(Correlation)) %>%
-    ggplot(aes(x=Correlation,
-               y=reorder(rownames(target_corr),Correlation),
-               fill=Correlation)) +
-    geom_col(color='black') + labs(title='Corrélation avec Attriction_Flag, en tenant compte du signe',y='') +
-    theme_classic() +
-    theme(legend.position = 'none')
+# # VERSION 2 si on veut connaitre le signe pour savoir le sens de la corrélation
+# 
+# # mutates
+# data_corr <- data %>% mutate_if(is.factor,as.numeric)
+# # compute correlation
+# correlation= cor(data_corr)
+# correlation
+# # correlation as data.frame d'une colonne : Attriction_Flag
+# target_corr= as.data.frame(correlation[,1])
+# # correlation column name
+# colnames(target_corr) <-'Correlation'
+# # sort dataframe
+# target_corr <- (target_corr )%>% arrange(desc(Correlation))
+# # exclude target
+# target_corr <- target_corr %>% filter(Correlation<1)
+# # round
+# target_corr <- round(target_corr,2)
+# target_corr
+# # PLOT CORRELATION
+# target_corr %>% arrange(desc(Correlation)) %>%
+#     ggplot(aes(x=Correlation,
+#                y=reorder(rownames(target_corr),Correlation),
+#                fill=Correlation)) +
+#     geom_col(color='black') + labs(title='Corrélation avec Attriction_Flag, en tenant compte du signe',y='') +
+#     theme_classic() +
+#     theme(legend.position = 'none')
 # on obtient :
 # Correlation
 # Contacts_Count_12_mon           0.20
@@ -760,19 +761,19 @@ fviz_pca_var(res.pca,
 
 # CONCLUSION
 
-# THe 5 top features of determing a customer's attrition:
-# Total Transaction Count
-# Total Revolving Balance
-# Total Transaction Amount
-# Total Relationship Count
-# Total Count Change
+# THe 5 top des variables expliquant le plus l'attrition des clients 
+    # Total Transaction Count
+    # Total Revolving Balance
+    # Total Transaction Amount
+    # Total Relationship Count
+    # Total Count Change
 
 
 ### 7 - Régression logistique et AIC ----
 
 # partage du dataset en 70/30 
 intrain <- createDataPartition(data$Attrition_Flag, p=0.7, list = F, times = 1)
-# creation des datasets: testing (30%) & training (70%) pour minimiser le ridque de surentraienemnt 
+# creation des datasets: testing (30%) & training (70%) pour minimiser le risque de surentrainement 
 training <- data[intrain,]
 testing <- data[-intrain,]
 
