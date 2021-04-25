@@ -80,7 +80,8 @@ desc_stat <- function(data, data_stay, data_quit, source_var, target_var) {
     # comparaison des dispersions
     graphC <- ggplotify::as.grob(~boxplot(data[[source_var]] ~ data[[target_var]], xlab=source_var, ylab=target_var))
     # plot de variable source par variable cible
-    graphD <- ggplot(data, aes(x = source_var, fill = target_var)) +
+    graphD <- ggplot(data, aes(x = get(source_var), fill = get(target_var))) +
+        xlab(source_var)+
         geom_density(alpha = 0.7) +
         scale_fill_manual(values = c('black', 'white'), name ='') +
         theme_classic() +
