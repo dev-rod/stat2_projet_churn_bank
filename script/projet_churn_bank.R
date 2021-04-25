@@ -58,7 +58,7 @@ str(data)
 ##### la variable explicative : Attrition_Flag ( Factor )
 # C'est une vartiable qualitative, le modele a utiliser est donc une regression logistique
 summary(data)
-print (View(skim(data)))
+# print (View(skim(data)))
 
 # ---les 5 variables qualitatives
 # 1 Card_Category           : Factor
@@ -84,7 +84,7 @@ print (View(skim(data)))
 # 14- Dependent_count        : int
 
 ##################################################################################-
-# 3 - Analyse exploratoire des données (EDA) ----
+# 3 - Analyse exploratoire des données ----
 ##################################################################################-
 
 ### 3.1 - Séparation des clients en 2 dataframe : partis/restés ----
@@ -119,39 +119,40 @@ data$Card_Category <- fct_relevel(data$Card_Category, "Blue", "Silver", "Gold", 
 # str(data)
 # View(skim(data)
 
-#### 3.3 - stats des partis et restés ----
+#### 3.3 - stats des 2 populations (clients, anciens clients) ----
 data_quit <- data[(data$Attrition_Flag) == 1, ]
-View(skim(data_quit))
-str(data_quit)
+# View(skim(data_quit))
+# str(data_quit)
 # 1627 partis
 
 data_stay <- data[(data$Attrition_Flag) == 0, ]
-View(View(skim(data_stay)))
-str(data_stay)
+# View(View(skim(data_stay)))
+# str(data_stay)
 # 8500 restés
 
-#### 3.3.1 - Echantillonnage de 1000 restant et 1000 partant ----
+#### - Echantillonnage de 1000 restants et 1000 partants pour avoir deux populations de meme effectif ----
 
 sample_quit<-sample(1:dim(data_quit)[1],1000)
 sample_stay<-sample(1:dim(data_stay)[1],1000)
 
 data_reg<-rbind(data_quit[sample_quit,],data_stay[sample_stay,])
-View(skim(data_reg))
+# View(skim(data_reg))
 
 # data_reg_quit
 data_reg_quit <- data_reg[(data_reg$Attrition_Flag) == 1, ]
-View(skim(data_reg_quit))
-str(data_reg_quit)
+# View(skim(data_reg_quit))
+# str(data_reg_quit)
 
 # data_reg_stay 
 data_reg_stay <- data_reg[(data_reg$Attrition_Flag) == 0, ]
-View(skim(data_reg_stay))
-str(data_reg_stay)
+# View(skim(data_reg_stay))
+# str(data_reg_stay)
 
-### 3.4 - 5 variables qualitatives : Analyse ----
+### 3.4 - 5 variables qualitatives : Analyse des ratios selon la valeur de l'Attriction_Flag----
 # Tableaux de frequences par Attrition_Flag
-# On cherche a trouver les relations entre 2 variables, à trouver les valeurs aberrantes (outliers)
-# et exclure les variables sans intérêt
+
+#==> On cherche a trouver les relations entre 2 variables, à trouver les valeurs aberrantes (outliers)
+# et exclure les variables sans intérêt,c'est a dire qui n'influencent pas le depart des clients
 
 #### 3.4.1 - Gender ----
 # search_cors(data, data_stay, data_quit, "Gender")
@@ -169,7 +170,7 @@ search_cors(data, data_reg_stay, data_reg_quit, "Marital_Status")
 # => peu de différence de proportion pour les divorcés et les statuts inconnus.
 # "0.385" "0.411" => parmi les celibataires, on trouve legerement plus de personnes qui se desabonnent (+2.6 %)
 # "0.468" "0.436" => parmi les mariés on trouve legerement plus de personnes qui restent abonnés ( -3%)
-#  = > il peut etre interessant de regrouper les classes divorcés et Unknown qui semblent avoir des proportions identiques
+#  = > ? il peut etre interessant de regrouper les classes divorcés et Unknown qui semblent avoir des proportions identiques?
 
 #### 3.4.3 - Card_Category  ----
 # search_cors(data, data_stay, data_quit, "Card_Category")
@@ -180,6 +181,7 @@ search_cors(data, data_reg_stay, data_reg_quit, "Card_Category")
 #  "0.056" "0.050"  => parmi les clients "carte Silver" peu de différence entre clients qui partent et qui restent (-0.6 %)
 #  "0.011" "0.013" => parmi les clients "carte Gold" peu de différence entre cleints qui partent et qui restent (+0.02%)
 # "0.002" "0.003" => parmi les clients "carte Platinum" peu de différence entre clients qui partent et qui restent (+0.1%)
+# ==> cette variable semble peu explicative
 
 #### 3.4.4 - Income_Category ----
 # search_cors(data, data_stay, data_quit, "Income_Category")
@@ -192,8 +194,9 @@ search_cors(data, data_reg_stay, data_reg_quit, "Income_Category")
 #  "0.071" "0.077" parmi les "$120K +", on observe une proportion legerement plus forte chez les desabonnés (+0.6%)
 # "0.109" "0.115" parmi les "Unknown", on observe une proportion legerement plus forte chez les desabonnés (+0.6%)
 # => les proportions les plus notables  :
-# sont chez les plus bas revenus (- 40 K$):  3 % de différence dans la proportion de desabonnés parmi les desabonnés.
-# les revenus moyens ("40-80 K$") : on observe une différence de 1.2 % et 2.7 % des abonnés parmi l'ensemble des abonnés
+#      - les plus bas revenus (- 40 K$):  3 % de différence dans la proportion de desabonnés parmi les desabonnés.
+#      - les revenus moyens ("40-80 K$") : on observe une différence de 1.2 % et 2.7 % des abonnés parmi l'ensemble
+#               ==> regrouper les deux classes $40/60K et $60/80K  ==> $40K - $80K 
 
 #### 3.4.5 - Education_Level ----
 # search_cors(data, data_stay, data_quit, "Education_Level")
@@ -211,10 +214,16 @@ search_cors(data, data_reg_stay, data_reg_quit, "Education_Level")
 # Il semble que le niveau d'etude relativement élevé (graduate, post graduate et doctorate) facilite de depart de la banque.
 # parmi les " unknow on trouve une tres legere surrepresentation des desabonnés
 
-# En résumé----
+# POUR CONCLURE SUR LES VARIABLES QUALITATIVES : ----
 # qui partira le + : une femme célibataire à bas revenu (<40 K$) avec un niveau d'éducation très élevé
 # qui restera le + : un homme marié à revenu moyen (40-80K$) avec un niveau d'éducation intermédiaire
-# On retiendra Gender, Marital_Status, Income_Category et Education_Level
+#  on ne s'interessera pas  au type de carte de credit qui semble tres peu explicative de la variable d'interet
+# ==> On se focalisera sur les variables explicatives :
+        # - Gender
+        # - Marital_Status
+        # - Income_Category
+        # - Education_Level
+
 
 ### 3.5 - 14 variables quantitatives : Analyse ----
 
@@ -248,6 +257,7 @@ test_stat(data_reg_stay, data_reg_quit, "Customer_Age", c("stay", "quit"))
 # variance data_quit$Customer_Age => 58.76221
 # STUDENT => Use a non parametric test like Wilcoxon test.
 # WILCOXON => W = 511132, p-value = 0.3884 => Les deux échantillons ne sont pas significativement différents.
+# la variable n'explique pas les difference de valeur de l'Attrition_Flag => elle ne sera pas conserver pour la recherche du meuilleur modele
 
 #### 3.5.3 - Dependent_count ----
 # desc_stat(data, data_stay, data_quit, "Dependent_count", "Attrition_Flag")
@@ -429,7 +439,7 @@ test_stat(data_reg_stay, data_reg_quit, "Total_Trans_Ct", c("stay", "quit"))
 #### 3.5.13.1 -  Total_Trans_Ct & Total_Trans_Amt ----
 # require(MASS)
 # require(dplyr)
-# 
+#Test de graphe avec grid  
 # p1 <- data %>%
 #     dplyr::select(Total_Trans_Ct,Attrition_Flag) %>%
 #     ggplot(aes(x=Total_Trans_Ct,fill=Attrition_Flag)) +
@@ -478,31 +488,26 @@ test_stat(data_reg_stay, data_reg_quit, "Avg_Utilization_Ratio")
 # WILCOXON => W = 325727, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
 
 # Les 9 variables pour lequels les populations sont significativement différent :
-# Avg_Utilization_Ratio
-# Total_Ct_Chng_Q4_Q1
-# Total_Trans_Ct   
-# Total_Trans_Amt
-# Total_Amt_Chng_Q4_Q1
-# Total_Revolving_Bal
-# Months_Inactive_12_mon
-# Contacts_Count_12_mon
-# Total_Relationship_Count
+        # Avg_Utilization_Ratio
+        # Total_Ct_Chng_Q4_Q1
+        # Total_Trans_Ct   
+        # Total_Trans_Amt
+        # Total_Amt_Chng_Q4_Q1
+        # Total_Revolving_Bal
+        # Months_Inactive_12_mon
+        # Contacts_Count_12_mon
+        # Total_Relationship_Count
 # ==> Ce sont probablement les variables les plus explicatives sur le départ ou non des clients.
 
 ### 4 - Matrice de correlation entre variables ----
 
-# Graphique I des corrélations entre chacune des variables - obsolete
-# data %>% select(where(is.numeric)) %>%
-#     as.matrix() %>%
-#     cor() %>%
-#     corrplot(method = "number", type="lower")
+### 4.1 - Graphique des corrélations entre chacune des variables avec la méthode de spearman  ----
 
-# Graphique II des corrélations entre chacune des variables avec la méthode de spearman
+# Graphique des corrélations entre chacune des variables avec la méthode de spearman
 cor_spearman <-
     cor(data[, sapply(data, is.numeric)], method = 'spearman')
 
-# Visualizing with a heatmap the correlation matrix with the pearson method
-as.matrix(data.frame(cor_spearman)) %>%
+# Visualisation avec une carte de chaleur de la matrice de corrélation de pearson
     round(3) %>% 
     hchart() %>%
     hc_add_theme(hc_theme_smpl()) %>%
@@ -511,18 +516,27 @@ as.matrix(data.frame(cor_spearman)) %>%
     hc_colorAxis(stops = color_stops(colors = viridis::inferno(10))) %>%
     hc_plotOptions(series = list(boderWidth = 0,
                                  dataLabels = list(enabled = TRUE)))
-# qu'en déduisons nous ?
 
-#  Visualisation des 3 plus fortes corrélations ressortant de la matrice de corrélation :
-# Custumer age and months of book are highly correlated (0.79)
+#  Visualisation des  plus fortes corrélations ressortant de la matrice de corrélation :
+
+    # Custumer age  ~  months of book 
 ggplot(data, aes(x=Customer_Age, y=Months_on_book)) + geom_point(color = "black",size= 0.3) + theme_classic() + ggtitle("Months on book vs Customer Age")
-# Total Transaction Count and Total Transaction Amount are highly correlated (0.81)
-ggplot(data, aes(x=Total_Trans_Amt, y= Total_Trans_Ct)) + geom_point(color = "red",size = 0.3) + theme_classic() + ggtitle("Total Trans Amt vs Total Trans Ct")
-# Total Revovlving Balance and Average Utilization Ratio are correlated (0.62)
-ggplot(data, aes(x=Total_Revolving_Bal, y= Avg_Utilization_Ratio)) + geom_point(color = "blue",size= 0.3) + theme_classic() + ggtitle("Total Revolving Bal vs Avg Utilization Ratio")
-# qu'en retire-t-on ??
 
-# --------autre visualisation des corrélations
+    # Total Transaction Count  ~  Total Transaction Amount (0.81)
+ggplot(data, aes(x=Total_Trans_Amt, y= Total_Trans_Ct)) + geom_point(color = "red",size = 0.3) + theme_classic() + ggtitle("Total Trans Amt vs Total Trans Ct")
+
+    # Total Revovlving Balance  ~ Average Utilization Ratio (0.62)
+ggplot(data, aes(x=Total_Revolving_Bal, y= Avg_Utilization_Ratio)) + geom_point(color = "blue",size= 0.3) + theme_classic() + ggtitle("Total Revolving Bal vs Avg Utilization Ratio")
+
+    # Avg_Open_To_Buy ~ Avg_Utilization_Ratio (-0.686)
+ggplot(data, aes(x=Avg_Open_To_Buy, y=Avg_Utilization_Ratio)) + geom_point(color = "green",size= 0.3) + theme_classic() + ggtitle("Avg_Open_To_Buy ~ Avg_Utilisation_Ratio")
+
+    # Avg_Utilization_Ratio ~ Total_Revolving_Bal (0.709)
+ggplot(data, aes(x=Avg_Utilization_Ratio, y=Total_Revolving_Bal)) + geom_point(color = "yellow",size= 0.3) + theme_classic() + ggtitle("Avg_Utilisation_Ratio ~ Total_Revolving_Bal")
+
+# ==> Cela nous donne des piste de simplification du modele de regression logistique pour le rendre plus robuste
+
+### 4.2 - Graphique des corrélations entre l'Attrition_Flag et les autres variables ----
 # correlation des variables avec Attriction_Flag  dans l'ordre decroissant
 # mutates
 data_corr <- data %>% mutate_if(is.factor,as.numeric)
@@ -542,32 +556,33 @@ target_corr <- round(target_corr,2)
 # LITE DES VARIABLES DANS L'ORDRE DE LEUR CORRELATION
 target_corr
 
-# Total_Trans_Ct                  0.37
-# Total_Ct_Chng_Q4_Q1             0.29
-# Total_Revolving_Bal             0.26
-# Contacts_Count_12_mon           0.20
-# Avg_Utilization_Ratio           0.18
-# Total_Trans_Amt                 0.17
-# Months_Inactive_12_mon          0.15
-# Total_Relationship_Count        0.15
-# Total_Amt_Chng_Q4_Q1            0.13
-# Gender                          0.04
-# Credit_Limit                    0.02
-# Dependent_count                 0.02
-# Marital_Status                  0.02
-# Customer_Age                    0.02
-# Income_Category                 0.02
-# Months_on_book                  0.01
-# Card_Category                   0.01
-# Education_Level                 0.01
-# Avg_Open_To_Buy                 0.00
+# RESULTATS :
+    # Total_Trans_Ct                  0.37
+    # Total_Ct_Chng_Q4_Q1             0.29
+    # Total_Revolving_Bal             0.26
+    # Contacts_Count_12_mon           0.20
+    # Avg_Utilization_Ratio           0.18
+    # Total_Trans_Amt                 0.17
+    # Months_Inactive_12_mon          0.15
+    # Total_Relationship_Count        0.15
+    # Total_Amt_Chng_Q4_Q1            0.13
+    # Gender                          0.04
+    # Credit_Limit                    0.02
+    # Dependent_count                 0.02
+    # Marital_Status                  0.02
+    # Customer_Age                    0.02
+    # Income_Category                 0.02
+    # Months_on_book                  0.01
+    # Card_Category                   0.01
+    # Education_Level                 0.01
+    # Avg_Open_To_Buy                 0.00
 
 # PLOT CORRELATION
 target_corr %>% arrange(desc(Correlation)) %>%
     ggplot(aes(x=Correlation,
                y=reorder(rownames(target_corr),Correlation),
                fill=Correlation)) +
-    geom_col(color='black') + labs(title='Corrélation avec Attriction_Flag en valeur absolue',y='') +
+    geom_col(color='black') + labs(title='Corrélation avec Attriction_Flag (en valeur absolue)',y='') +
     theme_classic() +
     theme(legend.position = 'none')
 
@@ -618,22 +633,6 @@ target_corr %>% arrange(desc(Correlation)) %>%
 # Total_Revolving_Bal            -0.26
 # Total_Ct_Chng_Q4_Q1            -0.29
 # Total_Trans_Ct                 -0.37
-
-
-# Transations amounts versus counts
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ### 5 - Réaliser des ACM sur Attrition_flag ----
 # http://www.sthda.com/french/articles/38-methodes-des-composantes-principales-dans-r-guide-pratique/74-afc-analyse-factorielle-des-correspondances-avec-r-l-essentiel/
