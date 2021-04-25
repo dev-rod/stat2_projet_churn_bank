@@ -593,12 +593,13 @@ fviz_pca_var(res.pca,
 )
 
 # Que retire-t-on de ces 4 populations et réussir à trouver une interprétation
-# 6 dimensions ne parviennent pas à expliquer Plus de 70% de la variance ou masse totale d'inertie
-# de même leurs valeurs propres sont toutes supérieures ou égales à 1 (critère de Kaiser)
-# Les 2 premières dimensions représentent 30% de la variance
-# le cluster n°3 représente 98% de ceux qui sont partis (1595 / 1627 individus)
-# CL : les cumuls de variance ne nous permettent pas ici d'obtenir pour le moment
-# une qualité globale explicative de l’analyse.
+# (rappel : l'acp permet une projection des 11 variables/dimensions retenues ici sur 2 dimensions dans un nuage de point,
+# le kmeans n'est pas là que pour découper cette projection en n cluster ici 4 )
+# les 6 premières dimensions ne parviennent pas à expliquer plus de 70% de la variance ou masse totale d'inertie
+# de même leurs valeurs propres sont toutes supérieures ou égales à 1 (critère de Kaiser) ce qui ne permet pas vraiment d'en sélectionner de pertinentes)
+# Les 2 premières dimensions ne représentent que 30% de la variance
+# sur le kmeans de ces 2 premières, le cluster n°3 (sur 4) représente 98% de ceux qui sont partis (1595 / 1627 individus) mais du coup cela ne signifie encore moins de chose
+# CL : les cumuls de variance ne nous permettent pas ici d'obtenir pour le moment une qualité globale explicative de l’analyse via ACP/kmeans.
 
 # CONCLUSION
 
