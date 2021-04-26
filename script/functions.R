@@ -1,4 +1,5 @@
 
+# Chargement des librairies du projet
 load_libraries <- function(){
     # data.frame amélioré
     if ("data.table" %in% rownames(installed.packages()) == FALSE) { install.packages("data.table", dependencies=TRUE)};library(data.table)

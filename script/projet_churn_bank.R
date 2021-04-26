@@ -673,13 +673,6 @@ sample_data %>%
 # Total Transaction Amount (Total_Trans_Amt)
 # Total Relationship Count (Total_Relationship_Count)
 
-# Nous pouvons tenter 3 modèles sur 
-# Gender
-# Income_Category
-# Total_Trans_Ct (discretisé) ?
-
-
-
 ### 7 - Régression logistique et AIC ----
 
 # Sélection du meilleur modèle
@@ -695,7 +688,7 @@ data_model <- data_model %>%
         ratio_Age_Month_On_Book = Customer_Age / Months_on_book
     )
 
-# reclassify ?
+# reclassification des variables quanti influençant le modèle
 
 # Months_on_book(<30, 31<40, +40)
 data_model[data_model$Months_on_book <= 30, "Months_on_book"] <- "< 30"
@@ -864,8 +857,8 @@ stepwise_aic <- stepAIC(simple.model, direction="both", scope=list(lower=simple.
 best.model <- glm(Attrition_Flag ~ Total_Trans_Amt + ratio_Trans_Amt_Ct + Total_Revolving_Bal + 
                       Total_Relationship_Count + Total_Trans_Ct + Total_Amt_Chng_Q4_Q1 + 
                       Months_Inactive_12_mon + Gender + Contacts_Count_12_mon + 
-                      Total_Ct_Chng_Q4_Q1 + Avg_Utilization_Ratio + Credit_Limit + 
-                      Avg_Open_To_Buy + Income_Category + Marital_Status + Dependent_count, family = binomial(logit), data = training)
+                      Credit_Limit + Total_Ct_Chng_Q4_Q1 + Avg_Utilization_Ratio + 
+                      Avg_Open_To_Buy, family = binomial(logit), data = training)
 
 
 # Interprétation
