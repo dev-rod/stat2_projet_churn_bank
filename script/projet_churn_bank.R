@@ -416,6 +416,8 @@ p2 <- data %>%
     geom_density(alpha=0.4) +
     labs(title="Distribution of Total Transaction Amount by Customer type", x="Total Transaction Amount", y="Density")
 grid.arrange(p1, p2, nrow = 2)
+
+
 # juste un test de graph gridding a priori, on garde ou pas ? peu pertinent à priori, les axes ne sont pas clairs
 
 #### 3.5.14 - Total_Ct_Chng_Q4_Q1 ---- 
@@ -680,323 +682,76 @@ sample_data %>%
 
 ### 7 - Régression logistique et AIC ----
 
-# partage du dataset en 70/30 
-# intrain <- createDataPartition(data$Attrition_Flag, p=0.7, list = F, times = 1)
-# # creation des datasets: testing (30%) & training (70%) pour minimiser le ridque de surentraienemnt 
-# training <- data[intrain,]
-# testing <- data[-intrain,]
+# Sélection du meilleur modèle
 
-# ---- modification des classes lorsqu'il y a des trop fort desequilibres
-
-# CLASSE => message d'erreur 
-
-# data_select <- data[, c(-2, -4, -8, -9, -13, -15)]
-# # classe_marital_class
-# data_select[which(data_select$Marital_Status %in% c("Divorced","Single")),"Marital_Status"] <- "Single"
-# Card_category_class
-#data_select[which(data_select$Card_Category %in% c("Gold","platinum","Silver")),"Card_Category"]<-"Others"
-# Income_category_class
-
-# levels(data_select$Income_Category) = c(levels(data_select$Income_Category), "Less than $60K", "More than $60K")
-# data_select[which(data_select$Income_Category %in% c("Less than $40K", "$40K - $60K")),"Income_Category"] <- "Less than $60K"
-# data_select[which(data_select$Income_Category %in% c("$60K - $80K","$80K - $120K","$120K +")),"Income_Category"] <- "More than $60K"
-# 
-# full.model <- lm(Attrition_Flag ~., data = data_select)
-# summary(full.model)
-
-
-
-
-# model_quali<-glm(Attrition_Flag~Income_Category, data=data_select, family= binomial(logit))
-
-# Interprétation
-# model_quali
-# summary(model_quali)
-# exp(coef(model_quali))
-# 
-# # Matrice de confusion
-# appren.p <- cbind(data_reg, predict(model_quali, newdata = data_reg, type = "link", se = TRUE))
-# appren.p <- within(appren.p, {
-#     PredictedProb <- plogis(fit)
-#     LL <- plogis(fit - (1.96 * se.fit))
-#     UL <- plogis(fit + (1.96 * se.fit))
-# })
-# appren.p <- cbind(appren.p, pred.chd = factor(ifelse(appren.p$PredictedProb > 0.5, 1, 0)))
-# colnames(appren.p)
-# appren.p<-appren.p[,c("binattrition","Customer_Age","Card_Category","fit","PredictedProb","pred.chd")]
-# (m.confusion <- as.matrix(table(appren.p$pred.chd, appren.p$binattrition)))
-# 
-# # Taux de bien classé
-# (m.confusion[1,1]+m.confusion[2,2]) / sum(m.confusion)
-# 
-# # Sensibilité
-# (m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
-# 
-# # Sensibilité
-# (m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
-# 
-# # Spécificité
-# (m.confusion[1,1]) / (m.confusion[1,1]+m.confusion[2,1])
-# 
-# 
-# # ODs ratio
-# exp(cbind(coef(model_quali), confint(model_quali)))
-# library(questionr)
-# odds.ratio(model_quali)
-# install.packages("GGally")
-# library(GGally)
-# library(broom.helpers)
-# ggcoef_model(model_quali, exponentiate = TRUE)
-
-
-
-
-
-#Model complet test
-#data_select<-data
-#data_select$Attrition_Flag <- as.factor(data_select$Attrition_Flag)
-#data_select<-c("Attrition_Flag","Customer_Age","Dependent_count","Months_on_book","Total_Relationship_Count","Months_Inactive_12_mon","Contacts_Count_12_mon","Credit_Limit","Total_Revolving_Bal","Avg_Open_To_Buy","Total_Amt_Chng_Q4","Total_Trans_Amt","Total_Trans_Ct","Total_Ct_Chng_Q4_Q1","Avg_Utilization_Ratio")
-#data_select<-as.factor(data_select)
-#simple.model <- glm(Attrition_Flag ~1, data = data_select, family = binomial)
-#summary(simple.model)
-
-
-###################################################################### LOUIS
-
-# Nouveau test regression
-data$Attrition_Flag<-as.factor(data$Attrition_Flag)
-class(data$Attrition_Flag)
-
-# Prendre des randoms pour que les résultats puissent être reproductibles
-set.seed(2000)
-
-# création de notre partitionnement par 70/30
-part<-createDataPartition(data$Attrition_Flag,p=0.7,
-                          list = F,
-                          times = 1)
-
-
-# Nouveau test regression
-data$Attrition_Flag<-as.character(data$Attrition_Flag)
-data$Attrition_Flag[data$Attrition_Flag=="Existing Customer"]<-"Stay"
-data$Attrition_Flag[data$Attrition_Flag=="Attrited Customer"]<-"Quit"
-data$Attrition_Flag<-as.factor(data$Attrition_Flag)
-class(data$Attrition_Flag)
-
-#Formation d'une matrice de confusion
-Attrition_step <-ifelse(predictions>=d[[1]],"Stay","Quit")
-
-#création d'ensembles de données de tests
-test1 <-data[part,]
-test2<-data[-part,]
-set.seed(2000)
-
-# REGRESSION LOGISTIQUE STEP- 10 000 STEPS
-Model1 <-glm(as.factor(Attrition_Flag)~.,data=data,
-             family=binomial(logit))
-Model_step <-step(Model1,
-                  direction = "both",
-                  steps = 10000,
-                  trace = F)
-predictions <-predict(Model_step,test2,
-                      type = "response")
-roc_step<-roc(response=test2$Attrition_Flag,predictor=predictions)
-plot(roc_step)
-
-
-# point de coupure
-pred_step <-prediction(predictions,test2$Attrition_Flag)
-plot(performance(pred_step,"tpr","fpr"),colorize=T)
-auc_step<-performance(pred_step,"auc")
-auc_step
-roc_step<-roc(response=test2$Attrition_Flag,predictor=predictions)
-plot(roc_step)
-d<-coords(roc_step,"best","threshold", transpose=T)
-d
-roc_step
-
-# Formation d'une matrice de confusion
-Attrition_step <-ifelse(predictions>=d[[1]],"Stay","Quit")
-test2$Attrition_Flag<-as.factor(test2$Attrition_Flag)
-Attrition_step<-as.factor(Attrition_step)
-
-# matrice de confusion
-cm_1 <-confusionMatrix(test2$Attrition_Flag,Attrition_step)
-cm_1
-
-set.seed(2000)
-#MODEL 2
-#regression logiqtique -k-fold 
-#
-#k-folds(folds=10) 
-
-ctrl_specs <-trainControl(method = "cv",
-                          savePredictions = "all",
-                          number = 10,
-                          classProbs = T)
-dim(training)
-
-Model2<- train(Attrition_Flag~.,data = training,
-               method="glm",
-               family=binomial,
-               trControl=ctrl_specs)
-Model2
-
-ctrl_specs <-trainControl(method = "cv",
-                          savePredictions = "all",
-                          number = 10,
-                          classProbs = T)
-dim(test1)
-Model2<- train(Attrition_Flag~.,data = test1,
-               method="glm",
-               family=binomial,
-               trControl=ctrl_specs)
-Model2
-
-
-
-#model 3 méthode lasso regression
-lambda_vector <-10^seq(-5,5,length=500)
-set.seed(2000)
-Model3 <-train(Attrition_Flag~.,data =test1,
-               method="glmnet",
-               tuneGrid=expand.grid(alpha=1,lambda=lambda_vector),
-               trControl=ctrl_specs,
-               preProcess=c("center","scale"),
-               na.action = na.omit)
-Model3
-Model3$bestTune$lambda
-# méthode LASSO regression coefficients(paramètres estimés)
-round(coef(Model3$finalModel,Model3$bestTune$lambda),3)
-varImp(Model3)
-
-# importance des variables
-ggplot(varImp(Model3))+
-    labs(title = "Rang importance des vars")
-
-
-## autres modèles
-log.model <- glm(Attrition_Flag ~ ., data=data, family=binomial(link='logit'))
-summary(log.model)
-step(log.model, direction="backward", trace=FALSE)
-
-modele_final<-glm(formula = Attrition_Flag ~ Customer_Age + Gender + Dependent_count + 
-                      Marital_Status + Income_Category + Card_Category + Total_Relationship_Count + 
-                      Months_Inactive_12_mon + Contacts_Count_12_mon + Credit_Limit + 
-                      Total_Revolving_Bal + Total_Amt_Chng_Q4_Q1 + Total_Trans_Amt + 
-                      Total_Trans_Ct + Total_Ct_Chng_Q4_Q1, family = binomial(link = "logit"), 
-                  data = data)
-pred<- predict(modele_final, test2, type='response')
-plot(modele_final)
-
-hist(pred)
-
-
-######################################  RODRIGUE #############################################"
-
-############################################################################
-############# Sélection du meilleur modèle
-############################################################################
-
-data_quit2 <- data_quit %>%
-    filter(Education_Level != "Unknown" & Marital_Status != "Unknown" & Income_Category != "Unknown")
-
-data_stay2 <- data_stay %>%
-    filter(Education_Level != "Unknown" & Marital_Status != "Unknown" & Income_Category != "Unknown")
-
-#### 3.5.1 - Echantillonnage de 1000 restant et 1000 partant ----
-sample_quit2<-sample(1:dim(data_quit2)[1],1000)
-sample_stay2<-sample(1:dim(data_stay2)[1],1000)
-data_reg2 <- rbind(data_quit[sample_quit2,],data_stay[sample_stay2,])
-skim(data_reg2)
-
-data_reg_selected <- data_reg2[, c(-2, -4, -8, -9, -13, -15, -17, -20)] %>%
-    mutate_if(is.factor, as.numeric)
-data_reg_selected$Attrition_Flag[data_reg_selected$Attrition_Flag==1]<-0
-data_reg_selected$Attrition_Flag[data_reg_selected$Attrition_Flag==2]<-1
-data_reg_selected$Gender[data_reg_selected$Gender==1]<-'F'
-data_reg_selected$Gender[data_reg_selected$Gender==2]<-'M'
-#summary(data_reg_selected)
-#str(data_reg_selected)
-
-
-# refilter ?
-# data_select<-na.omit(data_select[(data_select$colA + data_select$colB>x), c("colA","colB"...)])
-# data_select<-na.omit(data_select[,!colnames(data_select) %in% c("valA","valB"...)])
-# data_select <- data_select %>% filter(...)
 # reclassify ?
-# data_select[which(data_select$weight_class %in% c("Flyweight","Bantamweight")),"categorie_poids2"]<-"poid_plume_homme"
-# data_select$categorie_poids2<-as.factor(data_select$categorie_poids2)
 
+data_reg[data_reg$Avg_Open_To_Buy <= 1438, "Avg_Open_To_Buy"] <- 1
+data_reg[data_reg$Avg_Open_To_Buy >  1438 & data_reg$Avg_Open_To_Buy <= 3482 , "Avg_Open_To_Buy"] <- 2
+data_reg[data_reg$Avg_Open_To_Buy >  3482 & data_reg$Avg_Open_To_Buy <= 9172 , "Avg_Open_To_Buy"] <- 3
+data_reg[data_reg$Avg_Open_To_Buy > 9172, "Avg_Open_To_Buy"] <- 4
 
-# régression linéaire classique
-# full.model <- lm(ratio_victoire ~., data = data_reg_selected)
-# summary(full.model)
-# 
-# simple.model <- lm(ratio_victoire ~1, data = data_reg_selected)
-# summary(simple.model)
+data_reg[data_reg$Avg_Open_To_Buy == 1, "Avg_Open_To_Buy"] <- "very_low"
+data_reg[data_reg$Avg_Open_To_Buy == 2, "Avg_Open_To_Buy"] <-"low"
+data_reg[data_reg$Avg_Open_To_Buy == 3, "Avg_Open_To_Buy"] <-"high"
+data_reg[data_reg$Avg_Open_To_Buy == 4, "Avg_Open_To_Buy"] <- "very high"
+table(data_reg$Avg_Open_To_Buy)
+
 
 # régression linéaire logistique:  - départ de la banque en fonction du profil (Gender, Education_Level, Income_Category) du match en fonction du style
 
-# Création des variables explicatives 
+# Création des variables explicatives
+# data_for_model <- data_reg %>%
+#     mutate(
+#         ratio_Trans_Amt_Ct = Total_Trans_Amt / Total_Trans_Ct
+#     )
+# data_for_model <- data_for_model[,c(-17)]
 
 
-data_reg_selected$ratio_revolving_bal_trans_ct <- data_reg_selected$Total_Revolving_Bal/data_reg_selected$Total_Trans_Ct
-data_reg_selected$diff_contact_inactive_month <- data_reg_selected$Months_Inactive_12_mon-data_reg_selected$Contacts_Count_12_mon
-str(data_reg_selected$diff_contact_inactive_month)
-skim(data_reg_selected$ratio_revolving_bal_trans_ct)
-skim(data_reg_selected$Attrition_Flag)
+data_for_model <- data_reg %>%
+    mutate(
+        ratio_Trans_Amt_Ct = Total_Trans_Amt / Total_Trans_Ct
+    ) %>%
+    mutate(
+        ratio_Age_Month_On_Book = Customer_Age / Months_on_book
+    )
+data_for_model <- data_for_model[,c(-17)]
 
-# Mise en classe ratio_revolving_bal_trans_ct
-hist(data_reg_selected$ratio_revolving_bal_trans_ct,breaks = 100)
-summary(data_reg_selected$ratio_revolving_bal_trans_ct)
 
-ggplot(data_reg_selected, aes(x = ratio_revolving_bal_trans_ct)) +
-    geom_histogram(aes(color = Attrition_Flag, fill = Attrition_Flag), 
-                   position = "identity", bins = 30, alpha = 0.4) +
-    scale_color_manual(values = c("#00AFBB", "#E7B800")) +
-    scale_fill_manual(values = c("#00AFBB", "#E7B800"))
+set.seed(2000)
+# partage du dataset en 70/30
+intrain <- createDataPartition(data_for_model$Attrition_Flag, p=0.7, list = F, times = 1)
+# creation des datasets: testing (30%) & training (70%) pour minimiser le risque de surentrainement
+training <- data_for_model[intrain,]
+testing <- data_for_model[-intrain,]
 
-skim(data_reg_selected$diff_contact_inactive_month)
-data_reg_selected[data_reg_selected$diff_contact_inactive_month >= 1, "diff_contact_inactive_month"] <- 1
-data_reg_selected[data_reg_selected$diff_contact_inactive_month < -1, "diff_contact_inactive_month"] <- 4
-data_reg_selected[data_reg_selected$diff_contact_inactive_month >= -1 & data_reg_selected$diff_contact_inactive_month < 0 , "diff_contact_inactive_month"]<-3
-data_reg_selected[data_reg_selected$diff_contact_inactive_month >=  0 & data_reg_selected$diff_contact_inactive_month < 1 , "diff_contact_inactive_month"]<-2
+source('script/functions.R')
+select_best_model(training)
 
-data_reg_selected[data_reg_selected$diff_contact_inactive_month == 1, "diff_contact_inactive_month"] <- "peu_de_contact"
-data_reg_selected[data_reg_selected$diff_contact_inactive_month == 2, "diff_contact_inactive_month"] <-"contact confiance"
-data_reg_selected[data_reg_selected$diff_contact_inactive_month == 3, "diff_contact_inactive_month"] <-"contact vigilance"
-data_reg_selected[data_reg_selected$diff_contact_inactive_month == 4, "diff_contact_inactive_month"] <- "trop_de_contact"
-table(data_reg_selected$diff_contact_inactive_month)
 
-# Mise au format factor et gestion des levels 
-str(data_reg_selected)
-summary(data_reg_selected)
+#AIC: 928.26
+# best model
+# glm(formula = Attrition_Flag ~ Total_Trans_Ct + ratio_Trans_Amt_Ct + 
+#         Total_Revolving_Bal + Total_Ct_Chng_Q4_Q1 + Contacts_Count_12_mon + 
+#         Total_Relationship_Count + Total_Amt_Chng_Q4_Q1 + Gender + 
+#         Months_Inactive_12_mon, family = binomial(logit), data = training)
 
-data_reg_selected[data_reg_selected$Attrition_Flag == 0, "Attrition_Flag"] <- "Stayed"
-data_reg_selected[data_reg_selected$Attrition_Flag == 1, "Attrition_Flag"] <-"Attrited"
 
-data_reg_selected$Attrition_Flag<-as.factor(data_reg_selected$Attrition_Flag)
-data_reg_selected$diff_contact_inactive_month<-as.factor(data_reg_selected$diff_contact_inactive_month)
+best.model <- glm(Attrition_Flag ~ Total_Trans_Ct + ratio_Trans_Amt_Ct + Total_Revolving_Bal +
+                      Total_Ct_Chng_Q4_Q1 + Contacts_Count_12_mon + Total_Relationship_Count +
+                      Total_Amt_Chng_Q4_Q1 + Gender + Months_Inactive_12_mon,
+                  data=training, family= binomial(logit))
 
-levels(data_reg_selected$Attrition_Flag)
-levels(data_reg_selected$diff_contact_inactive_month)
 
-data_reg_selected$diff_contact_inactive_month<-factor(data_reg_selected$diff_contact_inactive_month, levels=c("peu_de_contact", "contact vigilance", "contact confiance", "trop_de_contact"))
-data_reg_selected$Attrition_Flag<-factor(data_reg_selected$Attrition_Flag, levels=c("Attrited","Stayed"))
 
-# Construction du modèle
-model_quali<-glm(Attrition_Flag~diff_contact_inactive_month, data=data_reg_selected, family= binomial(logit))
 
 # Interprétation
-model_quali
-summary(model_quali)
-exp(coef(model_quali))
-
+best.model
+summary(best.model)
+exp(coef(best.model))
 
 # Matrice de confusion
-appren.p <- cbind(data_reg_selected, predict(model_quali, newdata = data_reg_selected, type = "link", 
-                                    se = TRUE))
+appren.p <- cbind(testing, predict(best.model, newdata = testing, type = "link", se = TRUE))
 appren.p <- within(appren.p, {
     PredictedProb <- plogis(fit)
     LL <- plogis(fit - (1.96 * se.fit))
@@ -1004,36 +759,28 @@ appren.p <- within(appren.p, {
 })
 appren.p <- cbind(appren.p, pred.chd = factor(ifelse(appren.p$PredictedProb > 0.5, 1, 0)))
 colnames(appren.p)
-appren.p<-appren.p[,c("Attrition_Flag","ratio_revolving_bal_trans_ct","diff_contact_inactive_month","fit","PredictedProb","pred.chd")]
+appren.p<-appren.p[,c("Attrition_Flag", "Total_Trans_Ct", "ratio_Trans_Amt_Ct", "Total_Revolving_Bal", "Total_Ct_Chng_Q4_Q1", "Contacts_Count_12_mon",
+                      "Total_Relationship_Count", "Total_Amt_Chng_Q4_Q1", "Gender", "Months_Inactive_12_mon", "fit","PredictedProb","pred.chd")]
+
 (m.confusion <- as.matrix(table(appren.p$pred.chd, appren.p$Attrition_Flag)))
+# 245 vrai négatif, 253 vrai positif, 55 faux négatif, 47 faux positif
 
 # Taux de bien classé
-(m.confusion[1,1]+m.confusion[2,2]) / sum(m.confusion)
+taux_bien_classe <- (m.confusion[1,1]+m.confusion[2,2]) / sum(m.confusion)
+taux_bien_classe
 
 # Sensibilité
-(m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
+sensibilite <- (m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
+sensibilite
 
-# Spécificité 
-(m.confusion[1,1]) / (m.confusion[1,1]+m.confusion[2,1])
+# Spécificité
+specificite <- (m.confusion[1,1]) / (m.confusion[1,1]+m.confusion[2,1])
+specificite
 
 # ODs ratio
-exp(cbind(coef(model_quali), confint(model_quali)))
-odds.ratio(model_quali)
+exp(cbind(coef(best.model), confint(best.model)))
+odds.ratio(best.model)
 
-ggcoef_model(model_quali, exponentiate = TRUE)
-
-backward <- stepAIC(full.model, direction = "backward")
-model_quali
-
-forward <- stepAIC(simple.model, direction="forward", scope=list(lower=simple.model, upper=full.model))
-
-stepwise_aic <- stepAIC(simple.model, direction="both", scope=list(lower=simple.model, upper=full.model))
-#ratio_victoire ~ avg_GROUND_att + avg_KD + avg_DISTANCE_att + avg_SUB_ATT + avg_HEAD_att + Height_cms
-summary(stepwise_aic)
-
-n = dim(data_select)[1]
-stepwise_bic <- stepAIC(simple.model, direction="both", scope=list(lower=simple.model, upper=full.model),k=log(n))
-#ratio_victoire ~ avg_GROUND_att + avg_KD + avg_DISTANCE_att + avg_SUB_ATT
-summary(stepwise_bic)
+ggcoef_model(best.model, exponentiate = TRUE)
 
 

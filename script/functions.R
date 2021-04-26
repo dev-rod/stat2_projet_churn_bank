@@ -50,7 +50,6 @@ load_libraries <- function(){
     if ("correlationfunnel" %in% rownames(installed.packages()) == FALSE) {install.packages("correlationfunnel", dependencies=TRUE)};library(correlationfunnel)
     if ("ggalluvial" %in% rownames(installed.packages()) == FALSE) {install.packages("ggalluvial", dependencies=TRUE)};library(ggalluvial)
     #if ("tidymodels" %in% rownames(installed.packages()) == FALSE) {install.packages("tidymodels", dependencies=TRUE)};library(tidymodels)
-
     
     if ("questionr" %in% rownames(installed.packages()) == FALSE) {install.packages("questionr", dependencies=TRUE)};library(questionr)
     if ("broom.helpers" %in% rownames(installed.packages()) == FALSE) {install.packages("broom.helpers", dependencies=TRUE)};library(broom.helpers)
@@ -96,6 +95,12 @@ desc_stat <- function(data, data_stay, data_quit, source_var, target_var) {
         theme_classic() +
         labs(title = paste(source_var, " by ", target_var)) +
         theme(legend.position = 'bottom')
+    # TODO to refactor
+    # p1 <- data %>%
+    #     select(Total_Trans_Ct,Attrition_Flag) %>%
+    #     ggplot(aes(x=Total_Trans_Ct,fill=Attrition_Flag)) +
+    #     geom_bar(alpha=0.4,position="dodge") +
+    #     labs(title="Distribution of Total Transaction Count by Customer type", x="Total Transaction Count", y="Count")
     cowplot::plot_grid(graphA, graphB, graphC, graphD, labels=c("A", "B", "C", "D"), ncol = 2, nrow = 2)
 }
 # Tests de student et de wilcoxon
@@ -291,4 +296,21 @@ graph_target_correlation <- function(df, target_var_name){
         geom_col(color='black') + labs(title=paste(target_var_name, ' Correlation'), y='') +
         theme_classic() +
         theme(legend.position = 'none')
+}
+
+
+
+select_best_model <- function(training_data){
+    # Construction du modèle
+    full.model <- glm(Attrition_Flag~., data=training_data, family=binomial(logit))
+    simple.model <- glm(Attrition_Flag~1, data=training_data, family=binomial(logit))
+    
+    # backward <- stepAIC(full.model, direction = "backward")
+    # 
+    # forward <- stepAIC(simple.model, direction="forward", scope=list(lower=simple.model, upper=full.model))
+    
+    # challenge itératif avec ajout d'une nouvelle variable
+    stepwise_aic <- stepAIC(simple.model, direction="both", scope=list(lower=simple.model, upper=full.model))
+    message("################################ summary(stepwise_aic) ")
+    print(summary(stepwise_aic))
 }
