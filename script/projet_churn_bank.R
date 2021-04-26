@@ -684,65 +684,188 @@ sample_data %>%
 
 # Sélection du meilleur modèle
 
-# reclassify ?
-
-data_reg[data_reg$Avg_Open_To_Buy <= 1438, "Avg_Open_To_Buy"] <- 1
-data_reg[data_reg$Avg_Open_To_Buy >  1438 & data_reg$Avg_Open_To_Buy <= 3482 , "Avg_Open_To_Buy"] <- 2
-data_reg[data_reg$Avg_Open_To_Buy >  3482 & data_reg$Avg_Open_To_Buy <= 9172 , "Avg_Open_To_Buy"] <- 3
-data_reg[data_reg$Avg_Open_To_Buy > 9172, "Avg_Open_To_Buy"] <- 4
-
-data_reg[data_reg$Avg_Open_To_Buy == 1, "Avg_Open_To_Buy"] <- "very_low"
-data_reg[data_reg$Avg_Open_To_Buy == 2, "Avg_Open_To_Buy"] <-"low"
-data_reg[data_reg$Avg_Open_To_Buy == 3, "Avg_Open_To_Buy"] <-"high"
-data_reg[data_reg$Avg_Open_To_Buy == 4, "Avg_Open_To_Buy"] <- "very high"
-table(data_reg$Avg_Open_To_Buy)
-
-
-# régression linéaire logistique:  - départ de la banque en fonction du profil (Gender, Education_Level, Income_Category) du match en fonction du style
+data_model <- data_reg
 
 # Création des variables explicatives
-# data_for_model <- data_reg %>%
-#     mutate(
-#         ratio_Trans_Amt_Ct = Total_Trans_Amt / Total_Trans_Ct
-#     )
-# data_for_model <- data_for_model[,c(-17)]
-
-
-data_for_model <- data_reg %>%
+data_model <- data_model %>%
     mutate(
         ratio_Trans_Amt_Ct = Total_Trans_Amt / Total_Trans_Ct
     ) %>%
     mutate(
         ratio_Age_Month_On_Book = Customer_Age / Months_on_book
     )
-data_for_model <- data_for_model[,c(-17)]
+
+# reclassify ?
+
+# Months_on_book(<30, 31<40, +40)
+data_model[data_model$Months_on_book <= 30, "Months_on_book"] <- "< 30"
+data_model[data_model$Months_on_book > 30 & data_model$Months_on_book <= 40 , "Months_on_book"] <- "31 > 40"
+data_model[data_model$Months_on_book > 40, "Months_on_book"] <- "+40"
+
+# Total_Relationship_Count (<3, >=3)
+data_model[data_model$Total_Relationship_Count < 3, "Total_Relationship_Count"] <- "< 3"
+data_model[data_model$Total_Relationship_Count >= 3,  "Total_Relationship_Count"] <- " >=3"
+
+# Months_Inactive_12_mon(1, 2, >2)
+data_model[data_model$Months_Inactive_12_mon == 1, "Months_Inactive_12_mon"] <- "1"
+data_model[data_model$Months_Inactive_12_mon == 2,  "Months_Inactive_12_mon"] <- "2"
+data_model[data_model$Months_Inactive_12_mon > 2, "Months_Inactive_12_mon"] <- "+2"
+
+# Contacts_Count_12_mon(<3, >3)
+data_model[data_model$Contacts_Count_12_mon < 3, "Contacts_Count_12_mon"] <- "< 3"
+data_model[data_model$Contacts_Count_12_mon >= 3,  "Contacts_Count_12_mon"] <- " >=3"
+
+# Avg_Utilization_Ratio(0, other)
+data_model[data_model$Avg_Utilization_Ratio > 0, "Avg_Utilization_Ratio"] <- 2
+data_model[data_model$Avg_Utilization_Ratio == 0, "Avg_Utilization_Ratio"] <- 1
+data_model[data_model$Avg_Utilization_Ratio == 1, "Avg_Utilization_Ratio"] <- "zero"
+data_model[data_model$Avg_Utilization_Ratio == 2, "Avg_Utilization_Ratio"] <- "over zero"
+
+# Total_Ct_Chng_Q4_Q1(0.6)
+data_model[data_model$Total_Ct_Chng_Q4_Q1 > 0.6, "Total_Ct_Chng_Q4_Q1"] <- 2
+data_model[data_model$Total_Ct_Chng_Q4_Q1 <= 0.6, "Total_Ct_Chng_Q4_Q1"] <- 1
+data_model[data_model$Total_Ct_Chng_Q4_Q1 == 2, "Total_Ct_Chng_Q4_Q1"] <- "over0.6"
+data_model[data_model$Total_Ct_Chng_Q4_Q1 == 1, "Total_Ct_Chng_Q4_Q1"] <- "below0.6"
+
+# Total_Trans_Ct(60)
+data_model[data_model$Total_Trans_Ct <= 60, "Total_Trans_Ct"] <- 1
+data_model[data_model$Total_Trans_Ct > 60, "Total_Trans_Ct"] <- 2
+data_model[data_model$Total_Trans_Ct == 2, "Total_Trans_Ct"] <- "over60"
+data_model[data_model$Total_Trans_Ct == 1, "Total_Trans_Ct"] <- "below60"
+
+# Total_Trans_Amt(0, 3000, 7000, 11000)
+data_model[data_model$Total_Trans_Amt <= 3000, "Total_Trans_Amt"] <- 1
+data_model[data_model$Total_Trans_Amt > 3000 & data_model$Total_Trans_Amt <= 7000, "Total_Trans_Amt"] <- 2
+data_model[data_model$Total_Trans_Amt > 7000 & data_model$Total_Trans_Amt <= 11000, "Total_Trans_Amt"] <- 3
+data_model[data_model$Total_Trans_Amt > 11000, "Total_Trans_Amt"] <- 4
+data_model[data_model$Total_Trans_Amt == 1, "Total_Trans_Amt"] <- "very_few"
+data_model[data_model$Total_Trans_Amt == 2, "Total_Trans_Amt"] <- "few"
+data_model[data_model$Total_Trans_Amt == 3, "Total_Trans_Amt"] <- "medium"
+data_model[data_model$Total_Trans_Amt == 4, "Total_Trans_Amt"] <- "lot"
+
+# Total_Amt_Chng_Q4_Q1(<0.5, >=0.5<1, >=1)
+data_model[data_model$Total_Amt_Chng_Q4_Q1 < 0.5, "Total_Amt_Chng_Q4_Q1"] <- 0.1
+data_model[data_model$Total_Amt_Chng_Q4_Q1 >= 0.5 & data_model$Total_Amt_Chng_Q4_Q1 < 1, "Total_Amt_Chng_Q4_Q1"] <- 0.2
+data_model[data_model$Total_Amt_Chng_Q4_Q1 >= 1, "Total_Amt_Chng_Q4_Q1"] <- 0.3
+data_model[data_model$Total_Amt_Chng_Q4_Q1 == 0.1, "Total_Amt_Chng_Q4_Q1"] <- "very_few"
+data_model[data_model$Total_Amt_Chng_Q4_Q1 == 0.2, "Total_Amt_Chng_Q4_Q1"] <- "few"
+data_model[data_model$Total_Amt_Chng_Q4_Q1 == 0.3, "Total_Amt_Chng_Q4_Q1"] <- "lot"
+
+# Avg_Open_To_Buy(<5000, 5000-30000, >30000)
+data_model[data_model$Avg_Open_To_Buy < 5000, "Avg_Open_To_Buy"] <- 0.1
+data_model[data_model$Avg_Open_To_Buy >= 5000 & data_model$Avg_Open_To_Buy < 30000, "Avg_Open_To_Buy"] <- 0.2
+data_model[data_model$Avg_Open_To_Buy >= 30000, "Avg_Open_To_Buy"] <- 0.3
+data_model[data_model$Avg_Open_To_Buy == 0.1, "Avg_Open_To_Buy"] <- "very_few"
+data_model[data_model$Avg_Open_To_Buy == 0.2, "Avg_Open_To_Buy"] <- "few"
+data_model[data_model$Avg_Open_To_Buy == 0.3, "Avg_Open_To_Buy"] <- "lot"
+
+# Total_Revolving_Bal(0-500, 500-2200, >2200)
+data_model[data_model$Total_Revolving_Bal < 500, "Total_Revolving_Bal"] <- 0.1
+data_model[data_model$Total_Revolving_Bal >= 500 & data_model$Total_Revolving_Bal < 2200, "Total_Revolving_Bal"] <- 0.2
+data_model[data_model$Total_Revolving_Bal >= 2200, "Total_Revolving_Bal"] <- 0.3
+data_model[data_model$Total_Revolving_Bal == 0.1, "Total_Revolving_Bal"] <- "very_few"
+data_model[data_model$Total_Revolving_Bal == 0.2, "Total_Revolving_Bal"] <- "few"
+data_model[data_model$Total_Revolving_Bal == 0.3, "Total_Revolving_Bal"] <- "lot"
+
+# Credit_Limit(<5000, 5000-30000, >30000)
+data_model[data_model$Credit_Limit < 5000, "Credit_Limit"] <- 0.1
+data_model[data_model$Credit_Limit >= 5000 & data_model$Credit_Limit < 30000, "Credit_Limit"] <- 0.2
+data_model[data_model$Credit_Limit >= 30000, "Credit_Limit"] <- 0.3
+data_model[data_model$Credit_Limit == 0.1, "Credit_Limit"] <- "very_few"
+data_model[data_model$Credit_Limit == 0.2, "Credit_Limit"] <- "few"
+data_model[data_model$Credit_Limit == 0.3, "Credit_Limit"] <- "lot"
+
+summary(data_model)
+
+# régression linéaire logistique:  - départ de la banque en fonction du profil (Gender, Education_Level, Income_Category) du match en fonction du style
+
+
+# data_model_quit <- data_model[(data_model$Attrition_Flag) == 1, ]
+# skim(data_model_quit)
+# data_model_stay <- data_model[(data_model$Attrition_Flag) == 0, ]
+# str(data_model_stay)
+# 
+# desc_stat(data_model, data_model_stay, data_model_quit, "ratio_Age_Month_On_Book", "Attrition_Flag")
+# test_stat(data_model_stay, data_model_quit, "ratio_Age_Month_On_Book", c("stay", "quit"))
 
 
 set.seed(2000)
 # partage du dataset en 70/30
-intrain <- createDataPartition(data_for_model$Attrition_Flag, p=0.7, list = F, times = 1)
+intrain <- createDataPartition(data_model$Attrition_Flag, p=0.7, list = F, times = 1)
 # creation des datasets: testing (30%) & training (70%) pour minimiser le risque de surentrainement
-training <- data_for_model[intrain,]
-testing <- data_for_model[-intrain,]
+training <- data_model[intrain,]
+testing <- data_model[-intrain,]
 
-source('script/functions.R')
-select_best_model(training)
+# source('script/functions.R')
+# best_model <- select_best_model(training)
 
 
-#AIC: 928.26
-# best model
-# glm(formula = Attrition_Flag ~ Total_Trans_Ct + ratio_Trans_Amt_Ct + 
-#         Total_Revolving_Bal + Total_Ct_Chng_Q4_Q1 + Contacts_Count_12_mon + 
-#         Total_Relationship_Count + Total_Amt_Chng_Q4_Q1 + Gender + 
+# Construction du modèle
+full.model <- glm(Attrition_Flag~., data=training, family=binomial(logit))
+simple.model <- glm(Attrition_Flag~1, data=training, family=binomial(logit))
+
+# backward <- stepAIC(full.model, direction = "backward")
+# 
+# forward <- stepAIC(simple.model, direction="forward", scope=list(lower=simple.model, upper=full.model))
+
+# challenge itératif avec ajout d'une nouvelle variable
+stepwise_aic <- stepAIC(simple.model, direction="both", scope=list(lower=simple.model, upper=full.model))
+
+
+# AIC: 928.26
+# best model <- glm(formula = Attrition_Flag ~ Total_Trans_Ct + ratio_Trans_Amt_Ct +
+#         Total_Revolving_Bal + Total_Ct_Chng_Q4_Q1 + Contacts_Count_12_mon +
+#         Total_Relationship_Count + Total_Amt_Chng_Q4_Q1 + Gender +
 #         Months_Inactive_12_mon, family = binomial(logit), data = training)
 
+# AIC: 727.37
+# best.model <- glm(Attrition_Flag ~ Total_Trans_Amt + ratio_Trans_Amt_Ct + Total_Revolving_Bal + 
+#                       Total_Relationship_Count + Total_Trans_Ct + Total_Amt_Chng_Q4_Q1 + 
+#                       Months_Inactive_12_mon + Gender + Contacts_Count_12_mon + 
+#                       Total_Ct_Chng_Q4_Q1 + Avg_Utilization_Ratio + Credit_Limit + 
+#                       Avg_Open_To_Buy + Income_Category + Marital_Status + Dependent_count, family = binomial(logit), data = training)
 
-best.model <- glm(Attrition_Flag ~ Total_Trans_Ct + ratio_Trans_Amt_Ct + Total_Revolving_Bal +
-                      Total_Ct_Chng_Q4_Q1 + Contacts_Count_12_mon + Total_Relationship_Count +
-                      Total_Amt_Chng_Q4_Q1 + Gender + Months_Inactive_12_mon,
-                  data=training, family= binomial(logit))
+# classification BIS
+data_model_bis <- data_model
+
+# AIC 745.79 en le comentant et laissant les 2 autres
+# AIC=876.87 en le laissant et en commentant les 2 autres
+#data_model_bis[data_model_bis$Total_Trans_Amt %in% c("few", "lot", "medium"), "Total_Trans_Amt"] <- "few_medium_lot"
+
+# a voir bof : Months_Inactive_12_mon0/(Months_Inactive_12_mon1, Months_Inactive_12_mon2)
+
+# a voir bof : (Credit_Limitfew, Credit_Limitlot)/Credit_Limitvery few
 
 
+# AIC=926.12 en le comentant et en laissant les 2 autres
+# AIC=745.1 en le laissant et en commentant les 2 autres
+# data_model_bis$Income_Category = as.character(data_model_bis$Income_Category)
+# data_model_bis[data_model_bis$Income_Category %in% c("Unknown", "Less than $40K", "$40K - $60K", "$60K - $80K"), "Income_Category"] <- "Less than $80K"
+# data_model_bis[data_model_bis$Income_Category %in% c("$80K - $120K", "$120K +"), "Income_Category"] <- "More than $80K"
+# data_model_bis$Income_Category = as.factor(data_model_bis$Income_Category)
+
+# AIC=844.31 en le comentant et en laissant les 2 autres
+# AIC=743.7 en le laissant et en commentant les 2 autres
+# retrait Marital_Status & Dependent_count
+data_model_bis <- data_model_bis[,c(-4, -6)]
+
+intrain <- createDataPartition(data_model_bis$Attrition_Flag, p=0.7, list = F, times = 1)
+# creation des datasets: testing (30%) & training (70%) pour minimiser le risque de surentrainement
+training <- data_model_bis[intrain,]
+testing <- data_model_bis[-intrain,]
+
+# Construction du modèle
+full.model <- glm(Attrition_Flag~., data=training, family=binomial(logit))
+simple.model <- glm(Attrition_Flag~1, data=training, family=binomial(logit))
+
+# challenge itératif avec ajout d'une nouvelle variable
+stepwise_aic <- stepAIC(simple.model, direction="both", scope=list(lower=simple.model, upper=full.model))
+
+best.model <- glm(Attrition_Flag ~ Total_Trans_Amt + ratio_Trans_Amt_Ct + Total_Revolving_Bal + 
+                      Total_Relationship_Count + Total_Trans_Ct + Total_Amt_Chng_Q4_Q1 + 
+                      Months_Inactive_12_mon + Gender + Contacts_Count_12_mon + 
+                      Total_Ct_Chng_Q4_Q1 + Avg_Utilization_Ratio + Credit_Limit + 
+                      Avg_Open_To_Buy + Income_Category + Marital_Status + Dependent_count, family = binomial(logit), data = training)
 
 
 # Interprétation
@@ -758,12 +881,9 @@ appren.p <- within(appren.p, {
     UL <- plogis(fit + (1.96 * se.fit))
 })
 appren.p <- cbind(appren.p, pred.chd = factor(ifelse(appren.p$PredictedProb > 0.5, 1, 0)))
-colnames(appren.p)
-appren.p<-appren.p[,c("Attrition_Flag", "Total_Trans_Ct", "ratio_Trans_Amt_Ct", "Total_Revolving_Bal", "Total_Ct_Chng_Q4_Q1", "Contacts_Count_12_mon",
-                      "Total_Relationship_Count", "Total_Amt_Chng_Q4_Q1", "Gender", "Months_Inactive_12_mon", "fit","PredictedProb","pred.chd")]
 
 (m.confusion <- as.matrix(table(appren.p$pred.chd, appren.p$Attrition_Flag)))
-# 245 vrai négatif, 253 vrai positif, 55 faux négatif, 47 faux positif
+# 266 vrai négatif, 268 vrai positif, 34 faux négatif, 32 faux positif
 
 # Taux de bien classé
 taux_bien_classe <- (m.confusion[1,1]+m.confusion[2,2]) / sum(m.confusion)

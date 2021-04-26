@@ -313,4 +313,5 @@ select_best_model <- function(training_data){
     stepwise_aic <- stepAIC(simple.model, direction="both", scope=list(lower=simple.model, upper=full.model))
     message("################################ summary(stepwise_aic) ")
     print(summary(stepwise_aic))
+    return(stepwise_aic)
 }
