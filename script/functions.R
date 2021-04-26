@@ -47,6 +47,15 @@ load_libraries <- function(){
     if ("pROC" %in% rownames(installed.packages()) == FALSE) {install.packages("pROC", dependencies=TRUE)};library(pROC)
     if ("ROCR" %in% rownames(installed.packages()) == FALSE) {install.packages("ROCR", dependencies=TRUE)};library(ROCR)
     
+    if ("correlationfunnel" %in% rownames(installed.packages()) == FALSE) {install.packages("correlationfunnel", dependencies=TRUE)};library(correlationfunnel)
+    if ("ggalluvial" %in% rownames(installed.packages()) == FALSE) {install.packages("ggalluvial", dependencies=TRUE)};library(ggalluvial)
+    #if ("tidymodels" %in% rownames(installed.packages()) == FALSE) {install.packages("tidymodels", dependencies=TRUE)};library(tidymodels)
+
+    
+    if ("questionr" %in% rownames(installed.packages()) == FALSE) {install.packages("questionr", dependencies=TRUE)};library(questionr)
+    if ("broom.helpers" %in% rownames(installed.packages()) == FALSE) {install.packages("broom.helpers", dependencies=TRUE)};library(broom.helpers)
+    if ("GGally" %in% rownames(installed.packages()) == FALSE) {install.packages("GGally", dependencies=TRUE)};library(GGally)
+    
     # pour le probleme de CONFLIT de select() entre les deux librairies MASS et dplyr
     require(MASS)
     require(dplyr)

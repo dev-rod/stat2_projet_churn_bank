@@ -52,6 +52,7 @@ str(data)
 summary(data)
 print (skim(data))
 
+
 # ---les 5 variables qualitatives
 # 1 Card_Category           : Factor
 # 2 Gender                  : Factor
@@ -403,7 +404,7 @@ test_stat(data_reg_stay, data_reg_quit, "Total_Trans_Ct", c("stay", "quit"))
 # WILCOXON => W = 225446, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
 
 #### 3.5.13.1 - Comparaison Total_Trans_Ct & Total_Trans_Amt ----
-# tentative comparaison distributions montant et volume de transactions sur partis et restés, mais axes pas clairs
+# Tentative comparaison distributions montant et volume de transactions sur partis et restés, mais axes pas clairs
 p1 <- data %>%
     select(Total_Trans_Ct,Attrition_Flag) %>%
     ggplot(aes(x=Total_Trans_Ct,fill=Attrition_Flag)) +
@@ -449,7 +450,7 @@ test_stat(data_reg_stay, data_reg_quit, "Avg_Utilization_Ratio", c("stay", "quit
 # STUDENT => Use a non parametric test like Wilcoxon test.
 # WILCOXON => W = 325727, p-value < 2.2e-16=> Les deux échantillons sont significativement différents.
 
-# Les 9 variables pour lequels les populations sont significativement différent :
+# Les 9 variables pour lequels les populations sont significativement différentes :
 # Avg_Utilization_Ratio
 # Total_Ct_Chng_Q4_Q1
 # Total_Trans_Ct   
@@ -593,13 +594,72 @@ fviz_pca_var(res.pca,
 )
 
 # Que retire-t-on de ces 4 populations et réussir à trouver une interprétation
-# (rappel : l'acp permet une projection des 11 variables/dimensions retenues ici sur 2 dimensions dans un nuage de point,
+# (rappel : l'ACP permet une projection des 11 variables/dimensions retenues ici sur 2 dimensions dans un nuage de point,
 # le kmeans n'est pas là que pour découper cette projection en n cluster ici 4 )
 # les 6 premières dimensions ne parviennent pas à expliquer plus de 70% de la variance ou masse totale d'inertie
 # de même leurs valeurs propres sont toutes supérieures ou égales à 1 (critère de Kaiser) ce qui ne permet pas vraiment d'en sélectionner de pertinentes)
 # Les 2 premières dimensions ne représentent que 30% de la variance
 # sur le kmeans de ces 2 premières, le cluster n°3 (sur 4) représente 98% de ceux qui sont partis (1595 / 1627 individus) mais du coup cela ne signifie encore moins de chose
 # CL : les cumuls de variance ne nous permettent pas ici d'obtenir pour le moment une qualité globale explicative de l’analyse via ACP/kmeans.
+
+# graphique de liaison entre Gender, Education_Level et Income_Category
+custom_theme <- theme_bw() +
+    theme(plot.title = element_text(face = "bold", color = "black", size=14),
+          plot.subtitle = element_text(face = "italic", color = "black", size=12),
+          axis.text = element_text(color = "black"), legend.text = element_text(size=10),
+          legend.title = element_text(size = 12), legend.position = "none",
+          strip.background =element_rect(fill="#666666"), strip.text = element_text(color="white", face="bold"),
+          plot.caption = element_text(face = "italic"))
+
+sample_data <- data %>%
+    select(Attrition_Flag, Education_Level, Gender, Income_Category) %>%
+    filter(Attrition_Flag == 1) %>%
+    count(Attrition_Flag, Education_Level, Gender, Income_Category) %>%
+    mutate(
+        interesting_group = ifelse(Gender == "F" & Education_Level == "Graduate" &
+                                       Income_Category == "Less than $40K",
+                                   "Interesting", "Not Interesting")
+    )
+
+sample_data %>%
+    ggplot(aes(y = n,
+               axis1 = Gender, axis2 = Education_Level, axis3 = Income_Category)) +
+    ggalluvial::geom_alluvium(aes(fill = interesting_group), alpha = 0.4,  absolute = FALSE) +
+    ggalluvial::geom_stratum(absolute = FALSE, width = 0.45) +
+    geom_text(stat = "stratum", aes(label = after_stat(stratum)), absolute = FALSE) +
+    scale_x_discrete(limits = c("Gender", "Education Level","Income Category"), expand = c(.1, .05)) +
+    custom_theme + ggsci::scale_fill_nejm() +
+    labs(
+        title = "Différents Groupes avec le churn",
+        y = "Nb",
+        caption = "Les femmes diplômées qui sont bas dans la catégorie revenus montrent une bonne portion du churn"
+    )
+
+# extension avec le marital_status
+sample_data <- data %>%
+    select(Attrition_Flag, Education_Level, Gender, Income_Category, Marital_Status) %>%
+    filter(Attrition_Flag == 1) %>%
+    count(Attrition_Flag, Education_Level, Gender, Income_Category, Marital_Status) %>%
+    mutate(
+        interesting_group = ifelse(Gender == "F" & Education_Level == "Graduate" &
+                                   Income_Category == "Less than $40K" & Marital_Status %in% c("Single", "Married"),
+                                   "Interesting", "Not Interesting")
+    )
+
+sample_data %>%
+    ggplot(aes(y = n,
+               axis1 = Gender, axis2 = Marital_Status, axis3 = Education_Level, axis4 = Income_Category)) +
+    ggalluvial::geom_alluvium(aes(fill = interesting_group), alpha = 0.4,  absolute = FALSE) +
+    ggalluvial::geom_stratum(absolute = FALSE, width = 0.45) +
+    geom_text(stat = "stratum", aes(label = after_stat(stratum)), absolute = FALSE) +
+    scale_x_discrete(limits = c("Gender", "Marital_Status", "Education Level","Income Category"), expand = c(.1, .05)) +
+    custom_theme + ggsci::scale_fill_nejm() +
+    labs(
+        title = "Différents Groupes avec le churn",
+        y = "Nb",
+        caption = "Les femmes diplômées célibataires qui sont bas dans la catégorie revenus montrent une bonne portion du churn"
+    )
+
 
 # CONCLUSION
 
@@ -689,31 +749,7 @@ fviz_pca_var(res.pca,
 # ggcoef_model(model_quali, exponentiate = TRUE)
 
 
-# Graphique des corrélations entre chacune des variables
-# mutates
-# data_corr <- data_clean %>% mutate_if(is.factor, as.numeric)
-# data_colnames <- colnames(data_clean)
-# data_colnames
-# # compute correlation
-# correlation= cor(data_corr)
-# # correlation as data.frame
-# target_corr= as.data.frame(correlation[,1])
-# rownames(target_corr)<-data_colnames
-# # correlation column name
-# colnames(target_corr) <-'Correlation'
-# # sort dataframe
-# target_corr <- target_corr %>% arrange(desc(Correlation))
-# # exclude target
-# target_corr <- target_corr %>% filter(Correlation<1)
-# # round
-# target_corr <- round(target_corr,2)
-# target_corr %>% arrange(desc(Correlation)) %>%
-#     ggplot(aes(x=Correlation,
-#                y=reorder(rownames(target_corr), Correlation),
-#                fill=Correlation)) +
-#     geom_col(color='black') + labs(title='Target Correlation', y='Variables') +
-#     theme_classic() +
-#     theme(legend.position = 'none')
+
 
 
 #Model complet test
@@ -725,20 +761,19 @@ fviz_pca_var(res.pca,
 #summary(simple.model)
 
 
-#Nouveau test regression
+###################################################################### LOUIS
+
+# Nouveau test regression
 data$Attrition_Flag<-as.factor(data$Attrition_Flag)
 class(data$Attrition_Flag)
 
-
-#Prendre des randoms pour que les résultats puissent être reproductibles
+# Prendre des randoms pour que les résultats puissent être reproductibles
 set.seed(2000)
 
-
-#création de  notre partitionnement par 70/30
+# création de notre partitionnement par 70/30
 part<-createDataPartition(data$Attrition_Flag,p=0.7,
                           list = F,
                           times = 1)
-
 
 
 # Nouveau test regression
@@ -769,31 +804,25 @@ roc_step<-roc(response=test2$Attrition_Flag,predictor=predictions)
 plot(roc_step)
 
 
-
-
-
-
-
-#point de coupure
+# point de coupure
 pred_step <-prediction(predictions,test2$Attrition_Flag)
 plot(performance(pred_step,"tpr","fpr"),colorize=T)
 auc_step<-performance(pred_step,"auc")
 auc_step
 roc_step<-roc(response=test2$Attrition_Flag,predictor=predictions)
 plot(roc_step)
-d<-coords(roc_step,"best","threshold",transpose=T)
+d<-coords(roc_step,"best","threshold", transpose=T)
 d
 roc_step
-#Formation d'une matrice de confusion
+
+# Formation d'une matrice de confusion
 Attrition_step <-ifelse(predictions>=d[[1]],"Stay","Quit")
 test2$Attrition_Flag<-as.factor(test2$Attrition_Flag)
 Attrition_step<-as.factor(Attrition_step)
 
-
-#matrice de confusion
+# matrice de confusion
 cm_1 <-confusionMatrix(test2$Attrition_Flag,Attrition_step)
 cm_1
-
 
 set.seed(2000)
 #MODEL 2
@@ -837,17 +866,16 @@ Model3 <-train(Attrition_Flag~.,data =test1,
                na.action = na.omit)
 Model3
 Model3$bestTune$lambda
-#méthode LASSO regression coefficients(paramètres estimés)
+# méthode LASSO regression coefficients(paramètres estimés)
 round(coef(Model3$finalModel,Model3$bestTune$lambda),3)
 varImp(Model3)
 
-#importance des variables
+# importance des variables
 ggplot(varImp(Model3))+
     labs(title = "Rang importance des vars")
 
 
-
-##autres modèles
+## autres modèles
 log.model <- glm(Attrition_Flag ~ ., data=data, family=binomial(link='logit'))
 summary(log.model)
 step(log.model, direction="backward", trace=FALSE)
@@ -862,4 +890,150 @@ pred<- predict(modele_final, test2, type='response')
 plot(modele_final)
 
 hist(pred)
+
+
+######################################  RODRIGUE #############################################"
+
+############################################################################
+############# Sélection du meilleur modèle
+############################################################################
+
+data_quit2 <- data_quit %>%
+    filter(Education_Level != "Unknown" & Marital_Status != "Unknown" & Income_Category != "Unknown")
+
+data_stay2 <- data_stay %>%
+    filter(Education_Level != "Unknown" & Marital_Status != "Unknown" & Income_Category != "Unknown")
+
+#### 3.5.1 - Echantillonnage de 1000 restant et 1000 partant ----
+sample_quit2<-sample(1:dim(data_quit2)[1],1000)
+sample_stay2<-sample(1:dim(data_stay2)[1],1000)
+data_reg2 <- rbind(data_quit[sample_quit2,],data_stay[sample_stay2,])
+skim(data_reg2)
+
+data_reg_selected <- data_reg2[, c(-2, -4, -8, -9, -13, -15, -17, -20)] %>%
+    mutate_if(is.factor, as.numeric)
+data_reg_selected$Attrition_Flag[data_reg_selected$Attrition_Flag==1]<-0
+data_reg_selected$Attrition_Flag[data_reg_selected$Attrition_Flag==2]<-1
+data_reg_selected$Gender[data_reg_selected$Gender==1]<-'F'
+data_reg_selected$Gender[data_reg_selected$Gender==2]<-'M'
+#summary(data_reg_selected)
+#str(data_reg_selected)
+
+
+# refilter ?
+# data_select<-na.omit(data_select[(data_select$colA + data_select$colB>x), c("colA","colB"...)])
+# data_select<-na.omit(data_select[,!colnames(data_select) %in% c("valA","valB"...)])
+# data_select <- data_select %>% filter(...)
+# reclassify ?
+# data_select[which(data_select$weight_class %in% c("Flyweight","Bantamweight")),"categorie_poids2"]<-"poid_plume_homme"
+# data_select$categorie_poids2<-as.factor(data_select$categorie_poids2)
+
+
+# régression linéaire classique
+# full.model <- lm(ratio_victoire ~., data = data_reg_selected)
+# summary(full.model)
+# 
+# simple.model <- lm(ratio_victoire ~1, data = data_reg_selected)
+# summary(simple.model)
+
+# régression linéaire logistique:  - départ de la banque en fonction du profil (Gender, Education_Level, Income_Category) du match en fonction du style
+
+# Création des variables explicatives 
+
+
+data_reg_selected$ratio_revolving_bal_trans_ct <- data_reg_selected$Total_Revolving_Bal/data_reg_selected$Total_Trans_Ct
+data_reg_selected$diff_contact_inactive_month <- data_reg_selected$Months_Inactive_12_mon-data_reg_selected$Contacts_Count_12_mon
+str(data_reg_selected$diff_contact_inactive_month)
+skim(data_reg_selected$ratio_revolving_bal_trans_ct)
+skim(data_reg_selected$Attrition_Flag)
+
+# Mise en classe ratio_revolving_bal_trans_ct
+hist(data_reg_selected$ratio_revolving_bal_trans_ct,breaks = 100)
+summary(data_reg_selected$ratio_revolving_bal_trans_ct)
+
+ggplot(data_reg_selected, aes(x = ratio_revolving_bal_trans_ct)) +
+    geom_histogram(aes(color = Attrition_Flag, fill = Attrition_Flag), 
+                   position = "identity", bins = 30, alpha = 0.4) +
+    scale_color_manual(values = c("#00AFBB", "#E7B800")) +
+    scale_fill_manual(values = c("#00AFBB", "#E7B800"))
+
+skim(data_reg_selected$diff_contact_inactive_month)
+data_reg_selected[data_reg_selected$diff_contact_inactive_month >= 1, "diff_contact_inactive_month"] <- 1
+data_reg_selected[data_reg_selected$diff_contact_inactive_month < -1, "diff_contact_inactive_month"] <- 4
+data_reg_selected[data_reg_selected$diff_contact_inactive_month >= -1 & data_reg_selected$diff_contact_inactive_month < 0 , "diff_contact_inactive_month"]<-3
+data_reg_selected[data_reg_selected$diff_contact_inactive_month >=  0 & data_reg_selected$diff_contact_inactive_month < 1 , "diff_contact_inactive_month"]<-2
+
+data_reg_selected[data_reg_selected$diff_contact_inactive_month == 1, "diff_contact_inactive_month"] <- "peu_de_contact"
+data_reg_selected[data_reg_selected$diff_contact_inactive_month == 2, "diff_contact_inactive_month"] <-"contact confiance"
+data_reg_selected[data_reg_selected$diff_contact_inactive_month == 3, "diff_contact_inactive_month"] <-"contact vigilance"
+data_reg_selected[data_reg_selected$diff_contact_inactive_month == 4, "diff_contact_inactive_month"] <- "trop_de_contact"
+table(data_reg_selected$diff_contact_inactive_month)
+
+# Mise au format factor et gestion des levels 
+str(data_reg_selected)
+summary(data_reg_selected)
+
+data_reg_selected[data_reg_selected$Attrition_Flag == 0, "Attrition_Flag"] <- "Stayed"
+data_reg_selected[data_reg_selected$Attrition_Flag == 1, "Attrition_Flag"] <-"Attrited"
+
+data_reg_selected$Attrition_Flag<-as.factor(data_reg_selected$Attrition_Flag)
+data_reg_selected$diff_contact_inactive_month<-as.factor(data_reg_selected$diff_contact_inactive_month)
+
+levels(data_reg_selected$Attrition_Flag)
+levels(data_reg_selected$diff_contact_inactive_month)
+
+data_reg_selected$diff_contact_inactive_month<-factor(data_reg_selected$diff_contact_inactive_month, levels=c("peu_de_contact", "contact vigilance", "contact confiance", "trop_de_contact"))
+data_reg_selected$Attrition_Flag<-factor(data_reg_selected$Attrition_Flag, levels=c("Attrited","Stayed"))
+
+# Construction du modèle
+model_quali<-glm(Attrition_Flag~diff_contact_inactive_month, data=data_reg_selected, family= binomial(logit))
+
+# Interprétation
+model_quali
+summary(model_quali)
+exp(coef(model_quali))
+
+
+# Matrice de confusion
+appren.p <- cbind(data_reg_selected, predict(model_quali, newdata = data_reg_selected, type = "link", 
+                                    se = TRUE))
+appren.p <- within(appren.p, {
+    PredictedProb <- plogis(fit)
+    LL <- plogis(fit - (1.96 * se.fit))
+    UL <- plogis(fit + (1.96 * se.fit))
+})
+appren.p <- cbind(appren.p, pred.chd = factor(ifelse(appren.p$PredictedProb > 0.5, 1, 0)))
+colnames(appren.p)
+appren.p<-appren.p[,c("Attrition_Flag","ratio_revolving_bal_trans_ct","diff_contact_inactive_month","fit","PredictedProb","pred.chd")]
+(m.confusion <- as.matrix(table(appren.p$pred.chd, appren.p$Attrition_Flag)))
+
+# Taux de bien classé
+(m.confusion[1,1]+m.confusion[2,2]) / sum(m.confusion)
+
+# Sensibilité
+(m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
+
+# Spécificité 
+(m.confusion[1,1]) / (m.confusion[1,1]+m.confusion[2,1])
+
+# ODs ratio
+exp(cbind(coef(model_quali), confint(model_quali)))
+odds.ratio(model_quali)
+
+ggcoef_model(model_quali, exponentiate = TRUE)
+
+backward <- stepAIC(full.model, direction = "backward")
+model_quali
+
+forward <- stepAIC(simple.model, direction="forward", scope=list(lower=simple.model, upper=full.model))
+
+stepwise_aic <- stepAIC(simple.model, direction="both", scope=list(lower=simple.model, upper=full.model))
+#ratio_victoire ~ avg_GROUND_att + avg_KD + avg_DISTANCE_att + avg_SUB_ATT + avg_HEAD_att + Height_cms
+summary(stepwise_aic)
+
+n = dim(data_select)[1]
+stepwise_bic <- stepAIC(simple.model, direction="both", scope=list(lower=simple.model, upper=full.model),k=log(n))
+#ratio_victoire ~ avg_GROUND_att + avg_KD + avg_DISTANCE_att + avg_SUB_ATT
+summary(stepwise_bic)
+
 
