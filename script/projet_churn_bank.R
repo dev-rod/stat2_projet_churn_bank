@@ -28,7 +28,7 @@ data <- read.csv("data/BankChurners.csv", sep = ",")
 ##################################################################################-
 
 #####  Retrait des colonnes inutiles pour notre étude
-#   - CLIENTNUM
+#   - CLIENTNUM (anonymisation)
 #   - Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_1
 #   - Naive_Bayes_Classifier_Attrition_Flag_Card_Category_Contacts_Count_12_mon_Dependent_count_Education_Level_Months_Inactive_12_mon_2
 data <- data[, -c(1, 22, 23)]
@@ -522,7 +522,6 @@ ggplot(data, aes(x=Avg_Utilization_Ratio, y=Avg_Open_To_Buy)) + geom_point(color
 # qual : Gender, Marital_Status, Income_Category, Education_Level
 # quant: Avg_Utilization_Ratio, Total_Ct_Chng_Q4_Q1, Total_Trans_Ct, Total_Trans_Amt, Total_Amt_Chng_Q4_Q1, Total_Revolving_Bal,
 # Months_Inactive_12_mon, Contacts_Count_12_mon, Total_Relationship_Count
-# même à 11 ? en retirant aussi avg_utilization_ratio et Total_Trans_Amt en cl de la corrélation de spearman ?
 
 # conversion quali ordinal en quanti
 data_numerized <- data %>% mutate_if(is.factor, as.numeric)
@@ -532,15 +531,12 @@ data_numerized$Attrition_Flag[data_numerized$Attrition_Flag==2]<-1
 # graphique de corrélation avec la variable cible Attrition_Flag seulement
 graph_target_correlation(data_numerized, "Attrition_Flag")
 
-# graphique de corrélations avec la méthode de spearman
+# graphique global de corrélations inter-variables avec la méthode de spearman
 spearman_graph_correlation(data_numerized)
 
-# Retrait des colonnes qu'on considère inutiles
-# (variables dépendantes entre elles et du coup aussi dépendantes de la variable cible)
-# (variables indépendantes de la variable cible)
-# customer_age, dependent_count, card_category, months_on_book,
-# credit_limit, avg_open_to_buy, total_trans_amt, avg_utilization_ratio
-data_k <- data_numerized[, c(-2, -4, -8, -9, -13, -15, -17, -20)]
+# Retrait des colonnes qu'on considère peu pertinentes
+# dependent_count, card_category, marital_status
+data_k <- data_numerized[, c(-4, -6, -8)]
 # refaisons un graphique des corrélations entre chacune des 10 variables restantes
 spearman_graph_correlation(data_k)
 # ==> comme on a converti en numérique les variables quali,
@@ -560,10 +556,10 @@ set.seed(123)
 estimate_nb_cluster(data_kmeans)
 # ==> donc 4 clusters devraient suffire
 
-# KMEANS CLUSTERING en 4 groupes
+# KMEANS clustering en 4 groupes
 res.km <- kmeans(data_kmeans, centers = 4, nstart = 25)
 
-# nuage de points des 4 clusters
+# Nuage de points des 4 clusters
 graphe_nuage_clusters(res.km, data_k)
 
 # graphe des nuage de points par paires de variables
@@ -575,7 +571,6 @@ pairs(data_kmeans, col=c(1:2)[res.km$cluster])
 
 # Réduction de dimension à l'aide d'une ACP
 # Réduction de chacune des 11 variables quantitatives à 2 dimension en utilisant l'ACP(prcomp)
-
 res.pca <- prcomp(data_k[, c(-1)], scale = TRUE)
 
 # Analyse étendue des dimensions des 4 clusters avec ACP
@@ -596,8 +591,6 @@ fviz_pca_var(res.pca,
 )
 
 # Que retire-t-on de ces 4 populations et réussir à trouver une interprétation
-# (rappel : l'ACP permet une projection des 11 variables/dimensions retenues ici sur 2 dimensions dans un nuage de point,
-# le kmeans n'est pas là que pour découper cette projection en n cluster ici 4 )
 # les 6 premières dimensions ne parviennent pas à expliquer plus de 70% de la variance ou masse totale d'inertie
 # de même leurs valeurs propres sont toutes supérieures ou égales à 1 (critère de Kaiser) ce qui ne permet pas vraiment d'en sélectionner de pertinentes)
 # Les 2 premières dimensions ne représentent que 30% de la variance
@@ -662,24 +655,44 @@ sample_data %>%
         caption = "Les femmes diplômées célibataires qui sont bas dans la catégorie revenus montrent une bonne portion du churn"
     )
 
-
-# CONCLUSION
-
-# Retenons pour la réalisation des modèles que le top 5 des variables
-# déterminant le départ d'un client :
-# Total Transaction Count (Total_Trans_Ct)
-# Total Count Change (Total_Ct_Chng_Q4_Q1)
-# Total Revolving Balance (Total_Revolving_Bal)
-# Total Transaction Amount (Total_Trans_Amt)
-# Total Relationship Count (Total_Relationship_Count)
-
 ### 7 - Régression logistique et AIC ----
 
 # Sélection du meilleur modèle
 
+set.seed(2000)
+
+############################## modèle I : GLOBAL
 data_model <- data_reg
 
-# Création des variables explicatives
+source('script/functions.R')
+
+# partage du dataset en 70/30
+intrain <- createDataPartition(data_model$Attrition_Flag, p=0.7, list = F, times = 1)
+# creation des datasets: testing (30%) & training (70%) pour minimiser le risque de surentrainement
+training <- data_model[intrain,]
+testing <- data_model[-intrain,]
+
+select_best_model(data_model, training)
+
+# régression logistique sur modèle I
+best.model <- glm(Attrition_Flag ~ Total_Trans_Ct + Total_Trans_Amt + 
+                      Total_Revolving_Bal + Total_Ct_Chng_Q4_Q1 + Contacts_Count_12_mon + 
+                      Total_Relationship_Count + Months_Inactive_12_mon + Gender + 
+                      Total_Amt_Chng_Q4_Q1 + Months_on_book + Credit_Limit + Dependent_count, family = binomial(logit), data = training)
+#AIC: 989.95
+# resultats du modèle
+stat_model(best.model, testing)
+# matrice de confusion : 
+#     0   1
+# 0 244  44
+# 1  56 256
+# taux bien classé : 0.8333333
+# sensibilité : 0.8533333
+# Spécificité :0.8133333
+
+################################ modèle II : CATEGORISE (et avec Ajout de 2 variables explicatives)
+# ratio du montant de transactions sur le total de transactions +
+# rapport entre l'âge et le nombre de mois d'ouverture d'un compte
 data_model <- data_model %>%
     mutate(
         ratio_Trans_Amt_Ct = Total_Trans_Amt / Total_Trans_Ct
@@ -688,7 +701,7 @@ data_model <- data_model %>%
         ratio_Age_Month_On_Book = Customer_Age / Months_on_book
     )
 
-# reclassification des variables quanti influençant le modèle
+# reclassification des variables quantitaives influençant le modèle
 
 # Months_on_book(<30, 31<40, +40)
 data_model[data_model$Months_on_book <= 30, "Months_on_book"] <- "< 30"
@@ -768,131 +781,75 @@ data_model[data_model$Credit_Limit == 0.1, "Credit_Limit"] <- "very_few"
 data_model[data_model$Credit_Limit == 0.2, "Credit_Limit"] <- "few"
 data_model[data_model$Credit_Limit == 0.3, "Credit_Limit"] <- "lot"
 
-summary(data_model)
+#summary(data_model)
 
-# régression linéaire logistique:  - départ de la banque en fonction du profil (Gender, Education_Level, Income_Category) du match en fonction du style
-
-
-# data_model_quit <- data_model[(data_model$Attrition_Flag) == 1, ]
-# skim(data_model_quit)
-# data_model_stay <- data_model[(data_model$Attrition_Flag) == 0, ]
-# str(data_model_stay)
-# 
-# desc_stat(data_model, data_model_stay, data_model_quit, "ratio_Age_Month_On_Book", "Attrition_Flag")
-# test_stat(data_model_stay, data_model_quit, "ratio_Age_Month_On_Book", c("stay", "quit"))
-
-
-set.seed(2000)
 # partage du dataset en 70/30
 intrain <- createDataPartition(data_model$Attrition_Flag, p=0.7, list = F, times = 1)
 # creation des datasets: testing (30%) & training (70%) pour minimiser le risque de surentrainement
 training <- data_model[intrain,]
 testing <- data_model[-intrain,]
 
-# source('script/functions.R')
-# best_model <- select_best_model(training)
+select_best_model(data_model, training)
+# AIC: 690.95
+best.model <- glm(Attrition_Flag ~ Total_Trans_Amt + ratio_Trans_Amt_Ct + 
+                      Total_Revolving_Bal + Total_Relationship_Count + Total_Ct_Chng_Q4_Q1 + 
+                      Months_Inactive_12_mon + Total_Trans_Ct + Contacts_Count_12_mon + 
+                      Total_Amt_Chng_Q4_Q1 + Gender + ratio_Age_Month_On_Book + 
+                      Avg_Utilization_Ratio + Card_Category + Income_Category + 
+                      Marital_Status, family = binomial(logit), data = training)
+# resultats du modèle
+stat_model(best.model, testing)
+# matrice de confusion : 
+# 0   1
+# 0 253  28
+# 1  47 272
+# taux bien classé : 0.875
+# sensibilité : 0.9066667
+# Spécificité :0.8433333
 
+# AIC: 727.37 old ?
 
-# Construction du modèle
-full.model <- glm(Attrition_Flag~., data=training, family=binomial(logit))
-simple.model <- glm(Attrition_Flag~1, data=training, family=binomial(logit))
-
-# backward <- stepAIC(full.model, direction = "backward")
-# 
-# forward <- stepAIC(simple.model, direction="forward", scope=list(lower=simple.model, upper=full.model))
-
-# challenge itératif avec ajout d'une nouvelle variable
-stepwise_aic <- stepAIC(simple.model, direction="both", scope=list(lower=simple.model, upper=full.model))
-
-
-# AIC: 928.26
-# best model <- glm(formula = Attrition_Flag ~ Total_Trans_Ct + ratio_Trans_Amt_Ct +
-#         Total_Revolving_Bal + Total_Ct_Chng_Q4_Q1 + Contacts_Count_12_mon +
-#         Total_Relationship_Count + Total_Amt_Chng_Q4_Q1 + Gender +
-#         Months_Inactive_12_mon, family = binomial(logit), data = training)
-
-# AIC: 727.37
-# best.model <- glm(Attrition_Flag ~ Total_Trans_Amt + ratio_Trans_Amt_Ct + Total_Revolving_Bal + 
-#                       Total_Relationship_Count + Total_Trans_Ct + Total_Amt_Chng_Q4_Q1 + 
-#                       Months_Inactive_12_mon + Gender + Contacts_Count_12_mon + 
-#                       Total_Ct_Chng_Q4_Q1 + Avg_Utilization_Ratio + Credit_Limit + 
-#                       Avg_Open_To_Buy + Income_Category + Marital_Status + Dependent_count, family = binomial(logit), data = training)
-
-# classification BIS
+################################ modèle III : SIMPLIFIE
 data_model_bis <- data_model
 
-# AIC 745.79 en le comentant et laissant les 2 autres
-# AIC=876.87 en le laissant et en commentant les 2 autres
-#data_model_bis[data_model_bis$Total_Trans_Amt %in% c("few", "lot", "medium"), "Total_Trans_Amt"] <- "few_medium_lot"
+# non retenu
+# data_model_bis[data_model_bis$Total_Trans_Amt %in% c("few", "lot", "medium"), "Total_Trans_Amt"] <- "few_medium_lot"
 
+# non testé
 # a voir bof : Months_Inactive_12_mon0/(Months_Inactive_12_mon1, Months_Inactive_12_mon2)
 
+# non testé
 # a voir bof : (Credit_Limitfew, Credit_Limitlot)/Credit_Limitvery few
 
-
-# AIC=926.12 en le comentant et en laissant les 2 autres
-# AIC=745.1 en le laissant et en commentant les 2 autres
+# non retenu
 # data_model_bis$Income_Category = as.character(data_model_bis$Income_Category)
 # data_model_bis[data_model_bis$Income_Category %in% c("Unknown", "Less than $40K", "$40K - $60K", "$60K - $80K"), "Income_Category"] <- "Less than $80K"
 # data_model_bis[data_model_bis$Income_Category %in% c("$80K - $120K", "$120K +"), "Income_Category"] <- "More than $80K"
 # data_model_bis$Income_Category = as.factor(data_model_bis$Income_Category)
 
-# AIC=844.31 en le comentant et en laissant les 2 autres
-# AIC=743.7 en le laissant et en commentant les 2 autres
+
 # retrait Marital_Status & Dependent_count
 data_model_bis <- data_model_bis[,c(-4, -6)]
 
+# partage du dataset en 70/30
 intrain <- createDataPartition(data_model_bis$Attrition_Flag, p=0.7, list = F, times = 1)
 # creation des datasets: testing (30%) & training (70%) pour minimiser le risque de surentrainement
 training <- data_model_bis[intrain,]
 testing <- data_model_bis[-intrain,]
 
-# Construction du modèle
-full.model <- glm(Attrition_Flag~., data=training, family=binomial(logit))
-simple.model <- glm(Attrition_Flag~1, data=training, family=binomial(logit))
-
-# challenge itératif avec ajout d'une nouvelle variable
-stepwise_aic <- stepAIC(simple.model, direction="both", scope=list(lower=simple.model, upper=full.model))
-
-best.model <- glm(Attrition_Flag ~ Total_Trans_Amt + ratio_Trans_Amt_Ct + Total_Revolving_Bal + 
-                      Total_Relationship_Count + Total_Ct_Chng_Q4_Q1 + Total_Trans_Ct + 
-                      Months_Inactive_12_mon + Total_Amt_Chng_Q4_Q1 + Contacts_Count_12_mon + 
-                      Gender + Avg_Utilization_Ratio + Marital_Status, family = binomial(logit), data = training)
-
-
-# Interprétation
-best.model
-summary(best.model)
-exp(coef(best.model))
-
-# Matrice de confusion
-appren.p <- cbind(testing, predict(best.model, newdata = testing, type = "link", se = TRUE))
-appren.p <- within(appren.p, {
-    PredictedProb <- plogis(fit)
-    LL <- plogis(fit - (1.96 * se.fit))
-    UL <- plogis(fit + (1.96 * se.fit))
-})
-appren.p <- cbind(appren.p, pred.chd = factor(ifelse(appren.p$PredictedProb > 0.5, 1, 0)))
-
-(m.confusion <- as.matrix(table(appren.p$pred.chd, appren.p$Attrition_Flag)))
-# 266 vrai négatif, 268 vrai positif, 34 faux négatif, 32 faux positif
-
-# Taux de bien classé
-taux_bien_classe <- (m.confusion[1,1]+m.confusion[2,2]) / sum(m.confusion)
-taux_bien_classe
-
-# Sensibilité
-sensibilite <- (m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
-sensibilite
-
-# Spécificité
-specificite <- (m.confusion[1,1]) / (m.confusion[1,1]+m.confusion[2,1])
-specificite
-
-# ODs ratio
-exp(cbind(coef(best.model), confint(best.model)))
-odds.ratio(best.model)
-
-ggcoef_model(best.model, exponentiate = TRUE)
-
-
+select_best_model(data_model_bis, training)
+# AIC: 674.52
+best.model <- glm(Attrition_Flag ~ Total_Trans_Amt + ratio_Trans_Amt_Ct + 
+                      Total_Revolving_Bal + Total_Relationship_Count + Total_Ct_Chng_Q4_Q1 + 
+                      Total_Trans_Ct + Months_Inactive_12_mon + Contacts_Count_12_mon + 
+                      Gender + Total_Amt_Chng_Q4_Q1 + Card_Category + Months_on_book + 
+                      Avg_Utilization_Ratio, family = binomial(logit), data = training)
+# resultats du modèle
+stat_model(best.model, testing)
+# matrice de confusion : 
+# 0   1
+# 0 261  34
+# 1  39 266
+# taux bien classé : 0.8783333
+# sensibilité : 0.8866667
+# Spécificité : 0.87

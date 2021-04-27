@@ -114,7 +114,7 @@ test_stat <- function(data_reg_stay, data_reg_quit, source_var, wording) {
     print(wilcox.test(data_reg_quit[[source_var]], data_reg_stay[[source_var]]))
 }
 
-
+# recherche de corrélations
 search_cors <- function(data, data_stay, data_quit, quali_var) {
 
     # les modalités
@@ -133,6 +133,7 @@ search_cors <- function(data, data_stay, data_quit, quali_var) {
         print(my_ratio)
     }
 
+    #  graphe A histogramme pour les clients restés
     graphA <- data_quit %>%
         dplyr::select(Attrition_Flag, quali_var) %>%
         ggplot(aes(x = Attrition_Flag, fill = get(quali_var))) +
@@ -150,7 +151,7 @@ search_cors <- function(data, data_stay, data_quit, quali_var) {
         labs(title = paste(quali_var, "distribution"),
              x = "Attrited Customers", y = "count", fill=quali_var)
     
-    #  pour les clients
+    #  graphe B histogramme pour les clients restés
     graphB <- data_stay %>%
         dplyr::select(Attrition_Flag, quali_var) %>%
         ggplot(aes(x = Attrition_Flag, fill = get(quali_var), label="ggg")) +
@@ -168,14 +169,16 @@ search_cors <- function(data, data_stay, data_quit, quali_var) {
         labs(title = paste(quali_var, "distribution"),
              x = "Existing Customers", y = "count", fill=quali_var)
 
+    # tableau des 2 graphes
     cowplot::plot_grid(graphA, graphB, labels=c("A", "B"), ncol = 2, nrow = 1)
 }
 
+# graphe de corrélation avec méthode de spearman entre toutes les variables
 spearman_graph_correlation <- function(data) {
     cor_spearman <-
         cor(data[, sapply(data, is.numeric)], method = 'spearman')
     
-    # Visualizing with a heatmap the correlation matrix with the pearson method
+    # matrice de corrélation avec carte de chaleur
     as.matrix(data.frame(cor_spearman)) %>%
         round(3) %>% 
         hchart() %>%
@@ -187,6 +190,7 @@ spearman_graph_correlation <- function(data) {
                                      dataLabels = list(enabled = TRUE)))
 }
 
+# Fonction d'estimation du nombre de cluster pour un kmeans (3 méthodes testées, elbow retenu)
 estimate_nb_cluster <- function(scaled_df_data){
     
     # determining nb clusters with elbow method (warning very low)
@@ -211,6 +215,7 @@ estimate_nb_cluster <- function(scaled_df_data){
     #               max.nc = 10, method = "kmeans")
 }
 
+# génération du nuage de points sur un kmeans
 graphe_nuage_clusters <- function(kmeans_out, data_k){
     # nuage de points des 4 clusters
     # TODO variabiliser les couleurs
@@ -224,6 +229,7 @@ graphe_nuage_clusters <- function(kmeans_out, data_k){
     # factoextra::fviz_cluster(res.km, data_kmeans, ellipse.type = "norm")
 }
 
+# génération du nuage de points sur un kmeans avec acp
 graphe_acp_nuage_clusters <-  function(acp_out, kmeans_out, target_data){
     # TODO variabiliser Attrition_Flag
     
@@ -301,11 +307,12 @@ graph_target_correlation <- function(df, target_var_name){
 }
 
 
-
-select_best_model <- function(training_data){
+# sélection du meilleur modèle après entrainement des données
+select_best_model <- function(data_model, training){
+    
     # Construction du modèle
-    full.model <- glm(Attrition_Flag~., data=training_data, family=binomial(logit))
-    simple.model <- glm(Attrition_Flag~1, data=training_data, family=binomial(logit))
+    full.model <- glm(Attrition_Flag~., data=training, family=binomial(logit))
+    simple.model <- glm(Attrition_Flag~1, data=training, family=binomial(logit))
     
     # backward <- stepAIC(full.model, direction = "backward")
     # 
@@ -313,7 +320,50 @@ select_best_model <- function(training_data){
     
     # challenge itératif avec ajout d'une nouvelle variable
     stepwise_aic <- stepAIC(simple.model, direction="both", scope=list(lower=simple.model, upper=full.model))
+
     message("################################ summary(stepwise_aic) ")
     print(summary(stepwise_aic))
-    return(stepwise_aic)
+}
+
+# statistiques du modèle (matrice de confusion, sensibilité...)
+stat_model <- function(model, data_testing){
+    # Interprétation
+    print(model)
+    summary(model)
+    exp(coef(model))
+    
+    # Matrice de confusion
+    appren.p <- cbind(data_testing, predict(model, newdata = data_testing, type = "link", se = TRUE))
+    appren.p <- within(appren.p, {
+        PredictedProb <- plogis(fit)
+        LL <- plogis(fit - (1.96 * se.fit))
+        UL <- plogis(fit + (1.96 * se.fit))
+    })
+    appren.p <- cbind(appren.p, pred.chd = factor(ifelse(appren.p$PredictedProb > 0.5, 1, 0)))
+    
+    m.confusion <- as.matrix(table(appren.p$pred.chd, appren.p$Attrition_Flag))
+    message("matrice de confusion : ")
+    print(m.confusion)
+    # 266 vrai négatif, 268 vrai positif, 34 faux négatif, 32 faux positif
+    
+    # Taux de bien classé
+    taux_bien_classe <- (m.confusion[1,1]+m.confusion[2,2]) / sum(m.confusion)
+    message("taux bien classé : ")
+    print(taux_bien_classe)
+    
+    # Sensibilité
+    sensibilite <- (m.confusion[2,2]) / (m.confusion[2,2]+m.confusion[1,2])
+    message("sensibilité : ")
+    print(sensibilite)
+    
+    # Spécificité
+    specificite <- (m.confusion[1,1]) / (m.confusion[1,1]+m.confusion[2,1])
+    message("Spécificité : ")
+    print(specificite)
+    
+    # ODDs ratio
+    #exp(cbind(coef(best.model), confint(best.model)))
+    #odds.ratio(best.model)
+    
+    #ggcoef_model(best.model, exponentiate = TRUE)
 }
