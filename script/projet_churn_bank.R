@@ -855,10 +855,9 @@ simple.model <- glm(Attrition_Flag~1, data=training, family=binomial(logit))
 stepwise_aic <- stepAIC(simple.model, direction="both", scope=list(lower=simple.model, upper=full.model))
 
 best.model <- glm(Attrition_Flag ~ Total_Trans_Amt + ratio_Trans_Amt_Ct + Total_Revolving_Bal + 
-                      Total_Relationship_Count + Total_Trans_Ct + Total_Amt_Chng_Q4_Q1 + 
-                      Months_Inactive_12_mon + Gender + Contacts_Count_12_mon + 
-                      Credit_Limit + Total_Ct_Chng_Q4_Q1 + Avg_Utilization_Ratio + 
-                      Avg_Open_To_Buy, family = binomial(logit), data = training)
+                      Total_Relationship_Count + Total_Ct_Chng_Q4_Q1 + Total_Trans_Ct + 
+                      Months_Inactive_12_mon + Total_Amt_Chng_Q4_Q1 + Contacts_Count_12_mon + 
+                      Gender + Avg_Utilization_Ratio + Marital_Status, family = binomial(logit), data = training)
 
 
 # Interprétation
