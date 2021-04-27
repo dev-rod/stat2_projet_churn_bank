@@ -664,8 +664,6 @@ set.seed(2000)
 ############################## modèle I : GLOBAL
 data_model <- data_reg
 
-source('script/functions.R')
-
 # partage du dataset en 70/30
 intrain <- createDataPartition(data_model$Attrition_Flag, p=0.7, list = F, times = 1)
 # creation des datasets: testing (30%) & training (70%) pour minimiser le risque de surentrainement
